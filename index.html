@@ -23,6 +23,13 @@
   --shadow-lg:0 12px 48px rgba(30,43,34,.15);
 }
 
+
+/* ── LOADING DB ── */
+#db-loading{position:fixed;inset:0;background:rgba(30,43,34,.92);z-index:99998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.db-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--brand2);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.db-msg{color:#fff;font-family:Nunito,sans-serif;font-size:1rem;font-weight:700;letter-spacing:.5px;}
+
 /* ── HUELLAS ESTÁTICAS DE FONDO ── */
 #paws-canvas{
   position:fixed;
@@ -376,6 +383,11 @@ footer strong{color:var(--accent2);}
 <body>
 
 
+<div id="db-loading">
+  <div class="db-spinner"></div>
+  <div class="db-msg">Conectando con la base de datos...</div>
+</div>
+
 <div id="login-screen">
 
   <!-- ══ PANEL ADMIN (oculto por defecto) ══ -->
@@ -696,61 +708,41 @@ footer strong{color:var(--accent2);}
 const LOCS=["Agronomía", "Almagro", "Balvanera", "Barracas", "Belgrano", "Boedo", "Caballito", "Chacarita", "Coghlan", "Colegiales", "Constitución", "Flores", "Floresta", "La Boca", "La Paternal", "Liniers", "Mataderos", "Monte Castro", "Montserrat", "Nueva Pompeya", "Núñez", "Once", "Palermo", "Palermo Soho", "Palermo Hollywood", "Palermo Chico", "Parque Avellaneda", "Parque Chacabuco", "Parque Chas", "Parque Patricios", "Puerto Madero", "Recoleta", "Retiro", "Saavedra", "San Cristóbal", "San Nicolás", "San Telmo", "Tribunales", "Vélez Sársfield", "Versalles", "Villa Crespo", "Villa del Parque", "Villa Devoto", "Villa Gral. Mitre", "Villa Lugano", "Villa Luro", "Villa Ortúzar", "Villa Pueyrredón", "Villa Real", "Villa Riachuelo", "Villa Santa Rita", "Villa Soldati", "Villa Urquiza", "Acassuso", "Béccar", "Martínez", "Olivos", "La Lucila", "San Isidro", "Villa Adelina", "Carapachay", "Florida", "Munro", "Vicente López", "Villa Martelli", "Virreyes", "San Fernando", "Victoria", "Tigre", "Don Torcuato", "El Talar", "General Pacheco", "Ingeniero Maschwitz", "Rincón de Milberg", "Ricardo Rojas", "Benavídez", "Dique Luján", "El Recreo", "Nordelta", "Benavidez", "San Martín", "Villa Maipú", "Villa Lynch", "José León Suárez", "Santos Lugares", "Caseros", "Ciudadela", "El Palomar", "Hurlingham", "Ituzaingó", "Loma Hermosa", "Pablo Podestá", "Ramos Mejía", "Remedios de Escalada", "Sáenz Peña", "Villa Bosch", "Villa Santos Lugares", "Villa Tesei", "William Morris", "Escobar", "Belén de Escobar", "Matheu", "Maquinista Savio", "Garín", "Pilar", "Del Viso", "Fátima", "Derqui", "Villa Rosa", "Presidente Derqui", "Manuel Alberti", "Zelaya", "Grand Bourg", "Los Polvorines", "Malvinas Argentinas", "Ing. Adolfo Surdeaux", "Pablo Nogués", "José C. Paz", "San Miguel", "Bella Vista", "Campo de Mayo", "Muñiz", "Tierras Altas", "Banfield", "Llavallol", "Lomas de Zamora", "Temperley", "Turdera", "Villa Centenario", "Villa Fiorito", "Villa Insuperable", "Gerli", "Lanús", "Lanús Este", "Lanús Oeste", "Monte Chingolo", "Villa Caraza", "Avellaneda", "Dock Sud", "Crucecita", "Piñeyro", "Sarandí", "Villa Domínico", "Wilde", "Bernal", "Bernal Oeste", "Don Bosco", "Ezpeleta", "Quilmes", "Quilmes Oeste", "San Francisco Solano", "Villa La Florida", "Berazategui", "Berazategui Oeste", "El Pato", "Hudson", "Juan María Gutiérrez", "Ranelagh", "Villa España", "Bosques", "Florencio Varela", "Gobernador Julio A. Costa", "Ingeniero Juan Allan", "Ingeniero Budge", "La Carolina", "Los Eucaliptos", "Zeballos", "Adrogué", "Burzaco", "Claypole", "Don Orione", "Glew", "José Mármol", "Longchamps", "Ministro Rivadavia", "Monte Grande", "Rafael Calzada", "San José", "San Francisco de Asís", "Solano", "El Jagüel", "La Unión", "Luis Guillón", "9 de Abril", "Carlos Spegazzini", "Canning", "Ezeiza", "Tristán Suárez", "Guernica", "San Vicente", "Castelar", "Castelar Norte", "Castelar Sur", "Haedo", "Morón", "Villa Sarmiento", "Ituzaingó Norte", "Ituzaingó Sur", "Ciudad Evita", "Ciudad Madero", "González Catán", "Gregorio de Laferrere", "Isidro Casanova", "La Tablada", "Lomas del Mirador", "Rafael Castillo", "San Justo", "Tapiales", "Virrey del Pino", "Libertad", "Mariano Acosta", "Merlo", "Paso del Rey", "Pontevedra", "San Antonio de Padua", "Francisco Álvarez", "La Reja", "Moreno", "Moreno Centro", "Trujui", "General Rodríguez", "Marcos Paz", "Luján", "Olivera", "Torres", "Zárate", "Campana", "Exaltación de la Cruz", "Capilla del Señor", "Lima", "San Pedro", "Ramallo", "San Nicolás de los Arroyos", "Villa Constitución", "Baradero", "Pergamino", "Colón", "Salto", "Rojas", "San Antonio de Areco", "Junín", "Chacabuco", "Lincoln", "Leandro N. Alem", "Bragado", "9 de Julio", "Trenque Lauquen", "Pehuajó", "Bolívar", "Olavarría", "Tandil", "Azul", "Laprida", "Rauch", "Balcarce", "Mar del Plata", "General Pueyrredón", "Miramar", "Necochea", "Quequén", "Lobería", "Tres Arroyos", "San Cayetano", "González Chávez", "Bahía Blanca", "Coronel Rosales", "Punta Alta", "Monte Hermoso", "Cnel. Dorrego", "Coronel Suárez", "Pigüé", "Tornquist", "Sierra de la Ventana", "Villarino", "Médanos", "Río Colorado", "Patagones", "Carmen de Patagones", "Puán", "Guaminí", "Adolfo Alsina", "Carhué", "Daireaux", "General La Madrid", "Benito Juárez", "San Carlos de Bolívar", "Tapalqué", "Chascomús", "Castelli", "Pila", "General Belgrano", "Monte", "Roque Pérez", "Saladillo", "Las Flores", "Alvear", "Brandsen", "Lobos", "Navarro", "Mercedes", "Gral. Las Heras", "Alberti", "Chivilcoy", "Suipacha", "General Sarmiento", "La Plata", "Ensenada", "Berisso", "Magdalena", "Dolores", "Tordillo", "Maipú", "Gral. Lavalle", "Mar Chiquita", "Villa Gesell", "Pinamar", "General Madariaga", "La Costa", "San Bernardo", "Mar de Ajó", "Aguas Verdes", "Córdoba", "Alta Gracia", "Villa del Lago", "Anisacate", "La Bolsa", "Villa Carlos Paz", "Cosquín", "La Falda", "Cruz del Eje", "Capilla del Monte", "Jesús María", "Colonia Caroya", "Sinsacate", "Bell Ville", "Río Tercero", "Almafuerte", "Río Cuarto", "Las Higueras", "Santa Rosa de Río Primero", "Villa María", "Villa Nueva", "Etruria", "San Francisco", "Frontera", "Marcos Juárez", "Leones", "Inriville", "Laboulaye", "General Deheza", "Huinca Renancó", "La Carlota", "Ucacha", "Mina Clavero", "Nono", "Cura Brochero", "Traslasierra", "Villa Dolores", "Chancaní", "Oliva", "General Cabrera", "Río Ceballos", "Unquillo", "La Calera", "Mendiolaza", "Villa Allende", "Malagueño", "Falda del Cañete", "Arroyito", "Obispo Trejo", "Monte Cristo", "Morteros", "Porteña", "Dean Funes", "Quilino", "Deán Funes", "Embalse", "Villa Rumipal", "Los Cóndores", "Villa del Totoral", "Las Varas", "Rosario", "Granadero Baigorria", "Capitán Bermúdez", "Fray Luis Beltrán", "San Lorenzo", "Puerto General San Martín", "Pérez", "Soldini", "Álvarez", "Villa Gobernador Gálvez", "Rosario Sur", "Roldán", "Zavalla", "Santa Fe", "Santo Tomé", "Recreo", "Esperanza", "San Carlos Centro", "Rafaela", "Sunchales", "Josefina", "Reconquista", "Malabrigo", "Las Toscas", "Venado Tuerto", "Rufino", "Melincué", "Cañada de Gómez", "Casilda", "Firmat", "Arequito", "San Jorge", "Sastre", "Gálvez", "Villa Ocampo", "Romang", "La Gallareta", "Tostado", "Ceres", "Vera", "Arroyo Seco", "Empalme Villa Constitución", "Piamonte", "Armstrong", "Carcarañá", "Las Parejas", "Las Rosas", "Moisés Ville", "Suardi", "Mendoza", "Godoy Cruz", "Guaymallén", "Las Heras", "Luján de Cuyo", "Chacras de Coria", "Vistalba", "Agrelo", "San Rafael", "General Alvear", "Malargüe", "Rivadavia", "La Paz", "Tunuyán", "San Carlos", "Eugenio Bustos", "Palmira", "Santa Rosa", "Ciudad de Mendoza", "Dorrego", "Russell", "Perdriel", "San Miguel de Tucumán", "Yerba Buena", "Tafí Viejo", "Banda del Río Salí", "Concepción", "Monteros", "Aguilares", "Lules", "Famailla", "Alderetes", "Las Talitas", "El Manantial", "Tafí del Valle", "Amaicha del Valle", "La Cocha", "Graneros", "Juan Bautista Alberdi", "Villa Benjamín Araoz", "Burruyacu", "Salta", "General Güemes", "Tartagal", "Orán", "Embarcación", "Metán", "Rosario de la Frontera", "Joaquín V. González", "Cafayete", "Cachi", "Molinos", "La Caldera", "Cerrillos", "Rosario de Lerma", "El Galpón", "Aguaray", "Prof. Salvador Mazza", "San Salvador de Jujuy", "Palpalá", "San Pedro de Jujuy", "Libertador General San Martín", "Ledesma", "La Quiaca", "Humahuaca", "Tilcara", "Purmamarca", "Abra Pampa", "Caimancito", "Santa Clara", "Posadas", "Garupá", "Fachinal", "Oberá", "Campo Viera", "Eldorado", "Montecarlo", "Puerto Rico", "Iguazú", "Puerto Esperanza", "Apóstoles", "Azara", "Concepción de la Sierra", "San Ignacio", "Jardín América", "Aristóbulo del Valle", "Dos de Mayo", "Bernardo de Irigoyen", "El Soberbio", "Paraná", "Crespo", "Diamante", "Nogoyá", "Concordia", "Federación", "Federal", "Concepción del Uruguay", "Gualeguay", "Rosario del Tala", "Gualeguaychú", "Islas del Ibicuy", "Bovril", "Santa Elena", "Villaguay", "Basavilbaso", "Corrientes", "Riachuelo", "Santa Ana", "Goya", "Esquina", "Sauce", "Curuzú Cuatiá", "Monte Caseros", "Paso de los Libres", "Yapeyú", "Gobernador Virasoro", "Saladas", "Resistencia", "Barranqueras", "Fontana", "Puerto Vilelas", "Presidencia Roque Sáenz Peña", "Villa Ángela", "Charata", "General Pinedo", "Machagai", "Pampa del Infierno", "Corzuela", "Las Breñas", "Quitilipi", "La Eduvigis", "Villa Berthet", "Juan José Castelli", "Miraflores", "Formosa", "Clorinda", "El Colorado", "Pirané", "General Lucio Victorio Mansilla", "Las Lomitas", "Ingeniero Juárez", "Ibarreta", "Santiago del Estero", "La Banda", "Termas de Río Hondo", "Frías", "Añatuya", "Loreto", "Monte Quemado", "Quimilí", "Suncho Corral", "Fernández", "Forres", "Villa Atamisqui", "San Juan", "Rawson", "Chimbas", "Santa Lucía", "Pocito", "Albardón", "Angaco", "Caucete", "Sarmiento", "Jachal", "Iglesia", "Valle Fértil", "La Rioja", "Chilecito", "Chamical", "Chepes", "Aimogasta", "Tinogasta", "Villa Unión", "Nonogasta", "San Fernando del Valle de Catamarca", "Andalgalá", "Belén", "Santa María", "Fiambalá", "Villa de Baldes", "Pomán", "San Luis", "Villa Mercedes", "Justo Daract", "La Toma", "Buena Esperanza", "Quines", "Arizona", "Tilisarao", "Concarán", "Neuquén", "Centenario", "Plottier", "Vista Alegre", "San Martín de los Andes", "Villa La Angostura", "Junín de los Andes", "Zapala", "Piedra del Águila", "Chos Malal", "Cutral Có", "Plaza Huincul", "Rincón de los Sauces", "Las Lajas", "Loncopué", "Alumine", "Viedma", "San Antonio Oeste", "Bariloche", "El Bolsón", "Dina Huapi", "Cipolletti", "General Roca", "Allen", "Cinco Saltos", "Catriel", "Añelo", "Sierra Grande", "Las Grutas", "Choele Choel", "Lamarque", "Trelew", "Puerto Madryn", "Comodoro Rivadavia", "Rada Tilly", "Esquel", "Trevelín", "El Maitén", "Perito Moreno", "Puerto Pirámides", "Gaiman", "Dolavon", "Río Mayo", "Alto Río Senguer", "Río Gallegos", "Punta Arenas", "28 de Noviembre", "Caleta Olivia", "Pico Truncado", "El Calafate", "El Chaltén", "Puerto Deseado", "San Julián", "Gobernador Gregores", "Ushuaia", "Río Grande", "Tolhuin", "General Pico", "General Acha", "Toay", "Realicó", "Victorica", "Macachín", "Eduardo Castex", "Intendente Alvear", "Catriló", "Lonquimay", "Andacollo", "Buta Ranquil"];
 const COORDS={"Buenos Aires":[-34.6037,-58.3816],"Palermo":[-34.5827,-58.43],"Belgrano":[-34.5603,-58.4573],"Caballito":[-34.6167,-58.4333],"Villa Urquiza":[-34.575,-58.4833],"Almagro":[-34.6083,-58.425],"Floresta":[-34.63,-58.48],"Córdoba":[-31.4201,-64.1888],"Rosario":[-32.9468,-60.6393],"Mendoza":[-32.8908,-68.8272],"La Plata":[-34.9205,-57.9536],"Mar del Plata":[-38.0023,-57.5575],"Tucumán":[-26.8241,-65.2226],"San Miguel de Tucumán":[-26.8241,-65.2226],"Salta":[-24.7859,-65.4117],"Santa Fe":[-31.6333,-60.7],"San Juan":[-31.5375,-68.5364],"Resistencia":[-27.4513,-58.9861],"Corrientes":[-27.4806,-58.8341],"Posadas":[-27.3671,-55.896],"Paraná":[-31.7333,-60.5333],"Neuquén":[-38.9516,-68.0591],"Bahía Blanca":[-38.7183,-62.2663],"Formosa":[-26.1775,-58.1781],"San Salvador de Jujuy":[-24.1858,-65.2995],"Santiago del Estero":[-27.7951,-64.2615],"Río Cuarto":[-33.1232,-64.3493],"San Luis":[-33.295,-66.3356],"Comodoro Rivadavia":[-45.8647,-67.4977],"Viedma":[-40.8135,-62.9967],"Santa Rosa":[-36.6167,-64.2833],"Rawson":[-43.3002,-65.1023],"Ushuaia":[-54.8019,-68.303],"Río Gallegos":[-51.623,-69.2168],"San Rafael":[-34.6177,-68.3301],"Rafaela":[-31.2522,-61.4867],"Reconquista":[-29.1447,-59.6436],"Quilmes":[-34.7206,-58.2536],"Lomas de Zamora":[-34.7593,-58.3978],"Lanús":[-34.7006,-58.3894],"San Martín":[-34.5697,-58.5386],"Morón":[-34.6534,-58.6197],"Tigre":[-34.426,-58.5796],"San Isidro":[-34.4726,-58.5271],"Vicente López":[-34.527,-58.4753],"Florencio Varela":[-34.8079,-58.2764],"Berazategui":[-34.7647,-58.2103],"Merlo":[-34.6729,-58.7269],"Moreno":[-34.6393,-58.7914],"Rafael Calzada":[-34.7833,-58.35],"Almirante Brown":[-34.8,-58.3833],"Burzaco":[-34.8333,-58.3833],"Monte Grande":[-34.8167,-58.4667],"Glew":[-34.8833,-58.3833],"Pilar":[-34.4597,-58.9147],"Madryn":[-42.7683,-65.0355],"Trelew":[-43.2489,-65.3025],"Bariloche":[-41.1335,-71.3103]};
 
-// ── PERSISTENCIA localStorage ──
-const LS_MASCOTAS  = "mc_mascotas";
-const LS_RESENAS   = "mc_resenas";
-const LS_NEXTID    = "mc_nextid";
+// ══════════════════════════════════════════════════
+// PERSISTENCIA — JSONBin.io (base de datos compartida)
+// Todos los usuarios comparten los mismos datos
+// ══════════════════════════════════════════════════
+var JBIN_KEY  = "$2a$10$LnH5iAawZV6fXM8eBwWzx.MmABj3Fkp01rFUzawsdKB/xRTNzrGui";
+var JBIN_BASE = "https://api.jsonbin.io/v3/b/";
 
-function lsGet(key, def){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):def; }catch(e){return def;} }
-function lsSet(key, val){
-  try{
-    localStorage.setItem(key, JSON.stringify(val));
-    return true;
-  }catch(e){
-    // Si supera el limite de almacenamiento, guardar sin fotos b64
-    if(e.name==='QuotaExceededError' || e.code===22){
-      try{
-        var limpio = JSON.parse(JSON.stringify(val));
-        if(Array.isArray(limpio)){
-          limpio.forEach(function(m){
-            if(m.fotos) m.fotos = m.fotos.map(function(f){
-              return f.startsWith('data:') ? 'https://placedog.net/300/200' : f;
-            });
-          });
-        }
-        localStorage.setItem(key, JSON.stringify(limpio));
-      }catch(e2){}
-    }
-    return false;
-  }
-}
+// IDs de los bins — se crean automáticamente al primer uso
+var BINS = {
+  mascotas: localStorage.getItem("jbin_mascotas") || "",
+  resenas:  localStorage.getItem("jbin_resenas")  || "",
+  usuarios: localStorage.getItem("jbin_usuarios") || ""
+};
 
-// Cargar datos — si no hay nada guardado usa los datos de ejemplo
-let mascotas   = lsGet(LS_MASCOTAS, [
-  {id:1,nombre:"Rocky",edad:2,tipo:"Perro",estado:"Perdida",localidad:"Palermo",contacto:"11-1111-1111",
-   fotos:["https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg"],
-   desc:"Collar azul, muy amigable con niños. Desapareció cerca del Parque Las Heras.",
-   raza:"Golden Retriever",fecha:"01/04/2026",ts:20260401,resuelta:false},
-  {id:2,nombre:"Negrín",edad:5,tipo:"Perro",estado:"Encontrada",localidad:"Córdoba",contacto:"11-2222-2222",
-   fotos:["https://images.dog.ceo/breeds/labrador/n02099712_4323.jpg"],
-   desc:"Labrador negro, encontrado en el parque Sarmiento. Sin collar, muy dócil.",
-   raza:"Labrador negro",fecha:"31/03/2026",ts:20260331,resuelta:false},
-  {id:3,nombre:"Misu",edad:3,tipo:"Gato",estado:"Perdida",localidad:"Rosario",contacto:"11-3333-3333",
-   fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg"],
-   desc:"Gata persa blanca con manchas grises, muy tímida. Lleva collar rosa.",
-   raza:"Persa blanca",fecha:"02/04/2026",ts:20260402,resuelta:false},
-  {id:4,nombre:"Nieve",edad:1,tipo:"Perro",estado:"Perdida",localidad:"Rafael Calzada",contacto:"11-4444-4444",
-   fotos:["https://images.dog.ceo/breeds/husky/n02110185_10047.jpg"],
-   desc:"Husky siberiano, pelaje blanco y gris, ojos celestes. Muy dócil.",
-   raza:"Husky siberiano",fecha:"03/04/2026",ts:20260403,resuelta:false},
-  {id:5,nombre:"Canela",edad:1,tipo:"Gato",estado:"Perdida",localidad:"Caballito",contacto:"11-5555-5555",
-   fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/800px-Kittyply_edit1.jpg"],
-   desc:"Gatita atigrada marrón y naranja, muy juguetona. Se extravió en Caballito.",
-   raza:"Atigrada marrón",fecha:"03/04/2026",ts:20260403,resuelta:false}
-]);
-function guardarMascotas(){ return lsSet(LS_MASCOTAS, mascotas); }
+var MASCOTAS_DEFAULT = [
+  {id:1,nombre:"Rocky",edad:2,tipo:"Perro",estado:"Perdida",localidad:"Palermo",contacto:"11-1111-1111",fotos:["https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg"],desc:"Collar azul, muy amigable con niños. Desapareció cerca del Parque Las Heras.",raza:"Golden Retriever",fecha:"01/04/2026",ts:20260401,resuelta:false},
+  {id:2,nombre:"Negrín",edad:5,tipo:"Perro",estado:"Encontrada",localidad:"Córdoba",contacto:"11-2222-2222",fotos:["https://images.dog.ceo/breeds/labrador/n02099712_4323.jpg"],desc:"Labrador negro, encontrado en el parque Sarmiento. Sin collar, muy dócil.",raza:"Labrador negro",fecha:"31/03/2026",ts:20260331,resuelta:false},
+  {id:3,nombre:"Misu",edad:3,tipo:"Gato",estado:"Perdida",localidad:"Rosario",contacto:"11-3333-3333",fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg"],desc:"Gata persa blanca con manchas grises, muy tímida. Lleva collar rosa.",raza:"Persa blanca",fecha:"02/04/2026",ts:20260402,resuelta:false},
+  {id:4,nombre:"Nieve",edad:1,tipo:"Perro",estado:"Perdida",localidad:"Rafael Calzada",contacto:"11-4444-4444",fotos:["https://images.dog.ceo/breeds/husky/n02110185_10047.jpg"],desc:"Husky siberiano, pelaje blanco y gris, ojos celestes. Muy dócil.",raza:"Husky siberiano",fecha:"03/04/2026",ts:20260403,resuelta:false},
+  {id:5,nombre:"Canela",edad:1,tipo:"Gato",estado:"Perdida",localidad:"Caballito",contacto:"11-5555-5555",fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/800px-Kittyply_edit1.jpg"],desc:"Gatita atigrada marrón y naranja, muy juguetona. Se extravió en Caballito.",raza:"Atigrada marrón",fecha:"03/04/2026",ts:20260403,resuelta:false}
+];
 
-let nextId=lsGet(LS_NEXTID,6);let listaActual=[...mascotas],modalIdx=-1,selStars=0,b64s=[];
+var RESENAS_DEFAULT = [
+  {nombre:"Laura M.",ciudad:"Buenos Aires",texto:"¡Encontré a mi gatita en menos de un día! Gracias a toda la comunidad.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=1"},
+  {nombre:"Carlos P.",ciudad:"Córdoba",texto:"Publiqué el aviso y en 3 días alguien reconoció a mi perrito.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=3"},
+  {nombre:"Mariana F.",ciudad:"Rosario",texto:"El filtro por localidad es clave. Encontré al perro de mi vecino en minutos.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=5"},
+  {nombre:"Diego R.",ciudad:"Mendoza",texto:"Muy buena plataforma. La encontré en días gracias a los filtros.",estrellas:4,avatar:"https://i.pravatar.cc/80?img=7"},
+  {nombre:"Sofía L.",ciudad:"Mar del Plata",texto:"Todo fue muy transparente y rápido. La recomiendo.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=9"},
+  {nombre:"Tomás G.",ciudad:"Tucumán",texto:"Publiqué y a las horas me llamaron. ¡Excelente plataforma!",estrellas:5,avatar:"https://i.pravatar.cc/80?img=11"}
+];
+
+// Variables globales (se sobreescriben al cargar de JSONBin)
+let mascotas   = [...MASCOTAS_DEFAULT];
+let resenas    = [...RESENAS_DEFAULT];
+let nextId=6; let listaActual=[...mascotas],modalIdx=-1,selStars=0,b64s=[];
 let chips={b:{ok:false,val:""},p:{ok:false,val:""}};
 
 const GAL_IMGS=[
@@ -848,15 +840,14 @@ function publicar(){
   const now=new Date(),fecha=`${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
   const fotos=b64s.length?[...b64s]:["https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg"];
   const ts=Number(`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`);
-  var sess=getSesion();
+  var sess=getSession();
   mascotas.unshift({id:nextId++,nombre:n,tipo:t,estado:s,edad:document.getElementById("p-edad").value?Number(document.getElementById("p-edad").value):null,localidad:chips.p.val,contacto:c,fotos,desc:document.getElementById("p-desc").value.trim(),raza:document.getElementById("p-raza").value.trim(),fecha,ts,resuelta:false,publicadoPor:sess?sess.email:""});
   
   ["p-nombre","p-edad","p-contacto","p-raza","p-desc","p-loc"].forEach(id=>document.getElementById(id).value="");
   ["p-tipo","p-estado"].forEach(id=>document.getElementById(id).selectedIndex=0);
   clearChip("p");b64s=[];renderThumbs();
   var ok=guardarMascotas();
-  lsSet(LS_NEXTID,nextId);
-  listaActual=[...mascotas];
+    listaActual=[...mascotas];
   actualizarStats();
   renderCards(mascotas);
   toast("✅ ¡Mascota publicada y guardada!");
@@ -927,18 +918,10 @@ function initMap(){if(mapInstance)return;mapInstance=L.map("map").setView([-34.6
 function renderMapPins(filtro="Todas"){mapPins.forEach(p=>mapInstance.removeLayer(p));mapPins=[];mascotas.filter(m=>{if(filtro==="Todas")return true;return m.estado===filtro;}).forEach(m=>{const coords=COORDS[m.localidad]||[-34.6037,-58.3816];const jit=[coords[0]+(Math.random()-.5)*.04,coords[1]+(Math.random()-.5)*.04];const col=COLORES[m.estado]||"#666";const ico=L.divIcon({className:"",html:`<div style="width:16px;height:16px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});const popup=`<div class="popup-body"><img class="popup-img" src="${m.fotos[0]}" onerror="this.src='https://placedog.net/210/120'"><div class="popup-name">${m.nombre}</div><div class="popup-info">📍 ${m.localidad} · ${m.estado}</div>${m.raza?`<div class="popup-info">🐾 ${m.raza}</div>`:""}<button class="popup-btn" onclick="openModal(${mascotas.indexOf(m)});document.querySelector('.leaflet-popup-close-button').click()">Ver más</button></div>`;const pin=L.marker(jit,{icon:ico}).addTo(mapInstance).bindPopup(popup,{className:"custom-popup",maxWidth:220});mapPins.push(pin);});}
 function filtrarMapa(btn){document.querySelectorAll(".map-filter-btn").forEach(b=>b.classList.remove("on"));btn.classList.add("on");renderMapPins(btn.dataset.f);}
 
-let resenas=lsGet(LS_RESENAS,[
-  {nombre:"Laura M.",ciudad:"Buenos Aires",texto:"¡Encontré a mi gatita en menos de un día! Gracias a toda la comunidad 😭🐱",estrellas:5,avatar:"https://i.pravatar.cc/80?img=1"},
-  {nombre:"Carlos P.",ciudad:"Córdoba",texto:"Publiqué el aviso y en 3 días alguien reconoció a mi perrito. ¡Qué alivio!",estrellas:5,avatar:"https://i.pravatar.cc/80?img=3"},
-  {nombre:"Mariana F.",ciudad:"Rosario",texto:"El filtro por localidad es clave. Encontré al perro de mi vecino en minutos.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=5"},
-  {nombre:"Diego R.",ciudad:"Mendoza",texto:"Muy buena plataforma. La encontré en días gracias a los filtros por localidad.",estrellas:4,avatar:"https://i.pravatar.cc/80?img=7"},
-  {nombre:"Sofía L.",ciudad:"Mar del Plata",texto:"Todo fue muy transparente y rápido. La recomiendo.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=9"},
-  {nombre:"Tomás G.",ciudad:"Tucumán",texto:"Publiqué y a las horas me llamaron. ¡Excelente plataforma!",estrellas:5,avatar:"https://i.pravatar.cc/80?img=11"}
-]);
 function renderResenas(){document.getElementById("reviews-grid").innerHTML=resenas.map(r=>`<div class="review-card"><div class="review-stars">${"⭐".repeat(r.estrellas)}</div><div class="review-text">"${r.texto}"</div><div class="review-author"><div class="review-avatar"><img src="${r.avatar}" alt="${r.nombre}"></div><div><div class="review-name">${r.nombre}</div><div class="review-city">📍 ${r.ciudad}</div></div></div></div>`).join("");}
 document.querySelectorAll("#stars-picker span").forEach(s=>{s.addEventListener("mouseover",()=>updateStars(+s.dataset.v));s.addEventListener("click",()=>{selStars=+s.dataset.v;updateStars(selStars);});s.addEventListener("mouseout",()=>updateStars(selStars));});
 function updateStars(n){document.querySelectorAll("#stars-picker span").forEach((s,i)=>{s.textContent=i<n?"⭐":"☆";});}
-function agregarResena(){const n=document.getElementById("rev-nombre").value.trim(),c=document.getElementById("rev-ciudad").value.trim(),t=document.getElementById("rev-texto").value.trim();if(!n||!c||!t){toast("⚠️ Completá todos los campos");return;}if(!selStars){toast("⭐ Elegí una puntuación");return;}resenas.unshift({nombre:n,ciudad:c,texto:t,estrellas:selStars,avatar:`https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)+1}`});lsSet(LS_RESENAS,resenas);renderResenas();["rev-nombre","rev-ciudad","rev-texto"].forEach(id=>document.getElementById(id).value="");selStars=0;updateStars(0);toast("✅ ¡Gracias por tu reseña!");}
+function agregarResena(){const n=document.getElementById("rev-nombre").value.trim(),c=document.getElementById("rev-ciudad").value.trim(),t=document.getElementById("rev-texto").value.trim();if(!n||!c||!t){toast("⚠️ Completá todos los campos");return;}if(!selStars){toast("⭐ Elegí una puntuación");return;}resenas.unshift({nombre:n,ciudad:c,texto:t,estrellas:selStars,avatar:`https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)+1}`});guardarResenas();renderResenas();["rev-nombre","rev-ciudad","rev-texto"].forEach(id=>document.getElementById(id).value="");selStars=0;updateStars(0);toast("✅ ¡Gracias por tu reseña!");}
 
 function actualizarStats(){document.getElementById("s-total").textContent=mascotas.length;}
 
@@ -1406,7 +1389,7 @@ function resolverMascotaAdmin(idx){
 function eliminarResenaAdmin(idx){
   if(!confirm("¿Eliminar esta reseña?"))return;
   resenas.splice(idx,1);
-  lsSet(LS_RESENAS,resenas);
+  guardarResenas();
   renderResenas();
   mostrarAdmin();
   toast("Resena eliminada.");
@@ -1436,13 +1419,30 @@ function resolverMascotaAdmin(idx){
 }
 function eliminarResenaAdmin(idx){
   if(!confirm("¿Eliminar esta reseña?"))return;
-  resenas.splice(idx,1); lsSet(LS_RESENAS,resenas);
+  resenas.splice(idx,1); guardarResenas();
   renderResenas(); mostrarAdmin(); toast("Reseña eliminada.");
 }
 
 // ── ARRANQUE ──
-(function init(){
+(async function init(){
+  // 1. Verificar sesión
   var sess = getSession();
+
+  // 2. Inicializar/cargar datos de JSONBin
+  var dbLoading = document.getElementById("db-loading");
+  if(dbLoading) dbLoading.style.display = "flex";
+
+  // Si no hay bins configurados, crearlos (primer uso)
+  if(!BINS.mascotas || !BINS.resenas || !BINS.usuarios) {
+    await initBins();
+  }
+
+  // Cargar datos
+  await cargarDatos();
+
+  if(dbLoading) dbLoading.style.display = "none";
+
+  // 3. Mostrar login o entrar
   if(sess){
     entrar();
     mostrarNombreNav(sess.name);
@@ -1453,6 +1453,30 @@ function eliminarResenaAdmin(idx){
     setTimeout(function(){ document.getElementById("li-email").focus(); }, 150);
   }
 })();
+
+
+// Auto-refresh de datos cada 30 segundos
+setInterval(async function(){
+  var sess = getSession();
+  if(!sess) return; // No refrescar si no hay sesión
+  var dm = await binGet(BINS.mascotas);
+  if(dm && dm.mascotas && dm.mascotas.length !== mascotas.length){
+    mascotas = dm.mascotas;
+    nextId   = dm.nextId || nextId;
+    listaActual = [...mascotas];
+    actualizarStats();
+    aplicarOrden();
+    if(sess.isAdmin && document.getElementById("adm-panel")){
+      // Refrescar panel admin silenciosamente
+      mostrarAdmin();
+    }
+  }
+  var dr = await binGet(BINS.resenas);
+  if(dr && dr.resenas && dr.resenas.length !== resenas.length){
+    resenas = dr.resenas;
+    renderResenas();
+  }
+}, 30000);
 
 // ===== HUELLAS ESTÁTICAS DE FONDO =====
 (function(){
