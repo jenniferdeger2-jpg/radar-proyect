@@ -759,6 +759,93 @@ const GAL_IMGS=[
 ];
 
 
+// ══════════════════════════════════════════════════
+// FUNCIONES JSONBin.io
+// ══════════════════════════════════════════════════
+async function binGet(binId){
+  if(!binId) return null;
+  try{
+    var r = await fetch(JBIN_BASE + binId + "/latest", {
+      headers: { "X-Master-Key": JBIN_KEY }
+    });
+    if(!r.ok) return null;
+    var d = await r.json();
+    return d.record || null;
+  } catch(e){ console.error("binGet error:", e); return null; }
+}
+
+async function binPut(binId, data){
+  if(!binId) return false;
+  try{
+    var r = await fetch(JBIN_BASE + binId, {
+      method: "PUT",
+      headers: { "Content-Type":"application/json", "X-Master-Key": JBIN_KEY },
+      body: JSON.stringify(data)
+    });
+    return r.ok;
+  } catch(e){ console.error("binPut error:", e); return false; }
+}
+
+async function binCreate(nombre, data){
+  try{
+    var r = await fetch("https://api.jsonbin.io/v3/b", {
+      method: "POST",
+      headers: {
+        "Content-Type":"application/json",
+        "X-Master-Key": JBIN_KEY,
+        "X-Bin-Name": nombre,
+        "X-Bin-Private": "false"
+      },
+      body: JSON.stringify(data)
+    });
+    if(!r.ok){ console.error("binCreate failed:", await r.text()); return null; }
+    var d = await r.json();
+    return d.metadata ? d.metadata.id : null;
+  } catch(e){ console.error("binCreate error:", e); return null; }
+}
+
+async function initBins(){
+  console.log("Creando bins en JSONBin...");
+  if(!BINS.mascotas){
+    var id = await binCreate("radar_mascotas", {mascotas: MASCOTAS_DEFAULT, nextId: 6});
+    if(id){ BINS.mascotas = id; localStorage.setItem("jbin_mascotas", id); }
+  }
+  if(!BINS.resenas){
+    var id2 = await binCreate("radar_resenas", {resenas: RESENAS_DEFAULT});
+    if(id2){ BINS.resenas = id2; localStorage.setItem("jbin_resenas", id2); }
+  }
+  if(!BINS.usuarios){
+    var id3 = await binCreate("radar_usuarios", {usuarios: {}});
+    if(id3){ BINS.usuarios = id3; localStorage.setItem("jbin_usuarios", id3); }
+  }
+}
+
+async function cargarDatos(){
+  try{
+    var dm = await binGet(BINS.mascotas);
+    if(dm && dm.mascotas){ mascotas = dm.mascotas; nextId = dm.nextId || nextId; listaActual = [...mascotas]; }
+  } catch(e){ console.warn("No se pudieron cargar mascotas:", e); }
+  try{
+    var dr = await binGet(BINS.resenas);
+    if(dr && dr.resenas){ resenas = dr.resenas; }
+  } catch(e){ console.warn("No se pudieron cargar reseñas:", e); }
+  actualizarStats();
+  renderCards(mascotas);
+  renderResenas();
+}
+
+async function guardarMascotas(){
+  var ok = await binPut(BINS.mascotas, {mascotas: mascotas, nextId: nextId});
+  if(!ok) toast("⚠️ No se pudo guardar en la base de datos");
+  return ok;
+}
+
+async function guardarResenas(){
+  var ok = await binPut(BINS.resenas, {resenas: resenas});
+  if(!ok) toast("⚠️ No se pudo guardar la reseña");
+  return ok;
+}
+
 // NAV SCROLL
 window.addEventListener("scroll",()=>document.getElementById("mainNav").classList.toggle("scrolled",window.scrollY>40));
 
@@ -1346,56 +1433,6 @@ function mostrarAdmin(){
   div.innerHTML = h;
   document.body.appendChild(div.firstChild);
 }
-
-// ── ACCIONES ADMIN ──
-function verificarUsuarioAdmin(email){
-  var users=getUsers();
-  if(!users[email])return;
-  users[email].verified=true;
-  delete users[email].code;
-  saveUsers(users);
-  mostrarAdmin();
-  toast('✅ Usuario '+email+' verificado.');
-}
-
-function eliminarUsuarioAdmin(email){
-  if(!confirm("Eliminar usuario " + email + "?"))return;
-  var users=getUsers();
-  delete users[email];
-  saveUsers(users);
-  mostrarAdmin();
-  toast("Usuario eliminado.");
-}
-
-function eliminarMascotaAdmin(idx){
-  if(!confirm('¿Eliminar la publicación de "'+mascotas[idx].nombre+'"?'))return;
-  mascotas.splice(idx,1);
-  guardarMascotas();
-  renderCards(mascotas);
-  actualizarStats();
-  mostrarAdmin();
-  toast("Publicacion eliminada.");
-}
-
-function resolverMascotaAdmin(idx){
-  mascotas[idx].resuelta=true;
-  guardarMascotas();
-  renderCards(mascotas);
-  actualizarStats();
-  mostrarAdmin();
-  toast('✅ "'+mascotas[idx].nombre+'" marcada como resuelta.');
-}
-
-function eliminarResenaAdmin(idx){
-  if(!confirm("¿Eliminar esta reseña?"))return;
-  resenas.splice(idx,1);
-  guardarResenas();
-  renderResenas();
-  mostrarAdmin();
-  toast("Resena eliminada.");
-}
-
-
 
 // ── FUNCIONES ADMIN ──
 function verificarUsuarioAdmin(email){
