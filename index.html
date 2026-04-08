@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R.A.D.A.R. — Rastreo de Animales Desaparecidos con Alerta Regional</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{
+  --brand:#4A7C59;     /* verde bosque */
+  --brand2:#6B9E7A;    /* verde medio  */
+  --accent:#C8823A;    /* ámbar cálido  */
+  --accent2:#E8A85A;   /* ámbar claro   */
+  --dark:#1E2B22;      /* verde muy oscuro */
+  --dark2:#263830;
+  --fondo:#F7F4EF;     /* crema natural  */
+  --surface:#FFFFFF;
+  --text:#1E2B22;
+  --muted:#7A8C80;
+  --border:#E0D8CC;
+  --shadow:0 4px 24px rgba(30,43,34,.1);
+  --shadow-lg:0 12px 48px rgba(30,43,34,.15);
+}
+
+/* ── HUELLAS ESTÁTICAS DE FONDO ── */
+#paws-canvas{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  overflow:hidden;
+}
+.paw-float{
+  position:absolute;
+  pointer-events:none;
+  line-height:0;
+}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Nunito',sans-serif;background:var(--fondo);color:var(--text);overflow-x:hidden;overflow-y:auto;}
+::-webkit-scrollbar{width:7px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--brand2);border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:var(--brand);}
+
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:#1E2B22;display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;background-image:radial-gradient(ellipse at 20% 50%,rgba(74,124,89,.3) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(200,130,58,.15) 0%,transparent 60%);}
+.login-box{background:#fff;border-radius:20px;padding:44px 40px;max-width:400px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.4);}
+.login-logo{font-size:3rem;margin-bottom:8px;}
+.login-title{font-family:'Playfair Display',serif;font-size:1.7rem;color:#1E2B22;margin-bottom:4px;}
+.login-sub{font-size:.88rem;color:#7A8C80;margin-bottom:28px;font-weight:600;line-height:1.5;}
+.login-tabs{display:flex;background:#F7F4EF;border-radius:10px;padding:4px;margin-bottom:24px;gap:4px;}
+.login-tab{flex:1;padding:9px;border:none;border-radius:7px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .2s;background:transparent;color:#7A8C80;}
+.login-tab.active{background:#fff;color:#1E2B22;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.login-form{display:none;}.login-form.active{display:block;}
+.login-field{width:100%;padding:13px 16px;border:1.5px solid #E0D8CC;border-radius:9px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;margin-bottom:12px;color:#1E2B22;background:#F7F4EF;transition:border .2s;}
+.login-field:focus{border-color:#4A7C59;background:#fff;}
+.login-btn{width:100%;padding:14px;background:#4A7C59;color:#fff;border:none;border-radius:9px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;transition:background .2s;margin-bottom:10px;margin-top:4px;}
+.login-btn:hover{background:#6B9E7A;}
+.login-btn.secondary{background:transparent;color:#4A7C59;border:1.5px solid #4A7C59;margin-top:0;}
+.login-btn.secondary:hover{background:#F0F7F2;}
+.login-error{color:#C0392B;font-size:.84rem;font-weight:700;min-height:18px;margin-bottom:8px;text-align:left;}
+.login-success{color:#27AE60;font-size:.84rem;font-weight:700;min-height:18px;margin-bottom:8px;}
+
+
+.login-user-badge{display:none;background:#EFF7F2;border:1.5px solid #B2D8C0;border-radius:9px;padding:10px 14px;margin-bottom:16px;font-size:.86rem;color:#2A6642;font-weight:700;text-align:left;}
+.login-field-label{text-align:left;display:block;font-size:.76rem;font-weight:800;color:#7A8C80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.pwd-wrap{position:relative;margin-bottom:12px;}
+.pwd-toggle{position:absolute;right:12px;top:12px;background:none;border:none;cursor:pointer;font-size:1.2rem;color:#7A8C80;padding:2px 4px;line-height:1;z-index:2;border-radius:4px;}
+.login-strength{height:4px;border-radius:2px;margin-bottom:12px;background:#E0D8CC;transition:all .3s;}
+.str-weak{background:#C0392B;width:33%;}
+.str-mid{background:#C8823A;width:66%;}
+.str-strong{background:#27AE60;width:100%;}
+
+.alert-chip{display:inline-flex;align-items:center;gap:8px;background:var(--dark);color:#fff;padding:7px 14px;border-radius:6px;font-size:.82rem;font-weight:700;}
+.alert-chip button{background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;width:18px;height:18px;border-radius:50%;font-size:.75rem;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;transition:background .3s,box-shadow .3s;}
+nav.scrolled{background:rgba(30,43,34,.97);backdrop-filter:blur(14px);box-shadow:0 2px 16px rgba(0,0,0,.35);}
+.nav-logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:#fff;text-decoration:none;display:flex;align-items:center;gap:10px;}
+.nav-logo-icon{font-size:1.1rem;}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{color:rgba(255,255,255,.75);text-decoration:none;padding:7px 15px;border-radius:8px;font-weight:700;font-size:.86rem;transition:all .2s;}
+.nav-links a:hover{background:rgba(255,255,255,.1);color:#fff;}
+.nav-links a.cta{background:var(--accent);color:#fff;box-shadow:0 3px 12px rgba(200,130,58,.4);}
+.nav-links a.cta:hover{background:var(--accent2);}
+.nav-hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px;}
+.nav-hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px;transition:all .3s;}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-hamburger.open span:nth-child(2){opacity:0;}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.nav-mobile{display:none;position:fixed;top:62px;left:0;right:0;background:rgba(30,43,34,.98);flex-direction:column;padding:16px 20px 20px;gap:6px;z-index:898;}
+.nav-mobile.open{display:flex;}
+.nav-mobile a{color:rgba(255,255,255,.88);text-decoration:none;padding:12px 16px;border-radius:10px;font-weight:700;font-size:1rem;}
+.nav-mobile a:hover{background:rgba(255,255,255,.07);}
+
+/* ── HERO ── */
+.hero{min-height:100vh;position:relative;overflow:clip;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:90px 24px 56px;text-align:center;}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(165deg,#0F1A12 0%,#1E2B22 45%,#162A1E 100%);}
+.hero-orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;}
+.orb1{width:420px;height:420px;background:rgba(74,124,89,.28);top:-120px;left:-120px;animation:orbF 9s ease-in-out infinite alternate;}
+.orb2{width:340px;height:340px;background:rgba(200,130,58,.16);bottom:-80px;right:-80px;animation:orbF 11s ease-in-out infinite alternate-reverse;}
+@keyframes orbF{0%{transform:translate(0,0);}100%{transform:translate(36px,26px);}}
+.hero-content{position:relative;z-index:2;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(200,130,58,.12);border:1px solid rgba(200,130,58,.3);color:var(--accent2);padding:7px 18px;border-radius:6px;font-weight:700;font-size:.78rem;letter-spacing:2px;text-transform:uppercase;margin:0 auto 24px;animation:fadeD .6s ease both;}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,7vw,5.8rem);color:#fff;line-height:1.05;margin:0 auto 12px;text-align:center;animation:fadeD .7s .1s ease both;}
+.hero h1 em{font-style:italic;color:var(--accent2);}
+.hero-sub{font-size:1.05rem;color:rgba(255,255,255,.58);max-width:500px;margin:0 auto 12px;line-height:1.75;animation:fadeD .7s .2s ease both;}
+.hero-urgente{display:inline-flex;align-items:center;gap:8px;background:rgba(200,130,58,.14);border:1px solid rgba(200,130,58,.35);color:#E8B87A;padding:7px 16px;border-radius:6px;font-weight:700;font-size:.82rem;margin:0 auto 28px;animation:fadeD .7s .25s ease both;}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center;margin:0 auto 48px;animation:fadeD .7s .3s ease both;}
+.btn-h1{padding:15px 36px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;box-shadow:0 6px 24px rgba(74,124,89,.4);transition:all .2s;}
+.btn-h1:hover{background:var(--brand2);transform:translateY(-2px);}
+.btn-h2{padding:14px 36px;background:transparent;border:1.5px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;transition:all .2s;}
+.btn-h2:hover{background:rgba(255,255,255,.08);}
+.hero-wave{position:absolute;bottom:-2px;left:0;right:0;z-index:3;}
+
+/* ── TICKER ── */
+.ticker-wrap{background:var(--brand);padding:10px 0;overflow:hidden;}
+.ticker-track{display:flex;gap:56px;animation:ticker 22s linear infinite;width:max-content;white-space:nowrap;}
+.ticker-item{color:rgba(255,255,255,.88);font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:10px;}
+.ticker-dot{width:6px;height:6px;background:var(--accent2);border-radius:50%;flex-shrink:0;}
+
+/* ── STATS ── */
+.stats-section{background:var(--dark2);padding:36px 20px;display:flex;justify-content:center;flex-wrap:wrap;}
+.stat-box{flex:1 1 160px;text-align:center;padding:14px 28px;border-right:1px solid rgba(255,255,255,.07);max-width:220px;}
+.stat-box:last-child{border:none;}
+.stat-num{font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--accent2);display:block;line-height:1;}
+.stat-lbl{font-size:.74rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;}
+
+100%{transform:translateX(-50%);}}
+/* ── HOW ── */
+.how{padding:80px 20px;background:var(--surface);}
+.section-title{text-align:center;font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:8px;color:var(--text);}
+.section-sub{text-align:center;color:var(--muted);margin-bottom:48px;font-size:.98rem;}
+.how-grid{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;max-width:920px;margin:0 auto;}
+.how-card{background:var(--fondo);border:1.5px solid var(--border);border-radius:14px;padding:30px 22px;text-align:center;width:195px;transition:transform .25s,box-shadow .25s,border-color .25s;}
+.how-card:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:var(--brand2);}
+.how-icon-wrap{width:66px;height:66px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 14px;}
+.c1{background:#EAF2EC;} .c2{background:#F2EAF8;} .c3{background:#EAF0F8;} .c4{background:#EAF8EE;} .c5{background:#FEF8EA;} .c6{background:#F8EAEA;}
+.how-num{width:24px;height:24px;background:var(--brand);color:#fff;border-radius:50%;font-weight:800;font-size:.75rem;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.how-card h3{font-weight:800;font-size:1rem;margin-bottom:6px;}
+.how-card p{font-size:.82rem;color:var(--muted);line-height:1.6;}
+
+/* ── FEATURES ── */
+.features-strip{background:var(--dark);padding:56px 20px;}
+.features-strip .section-title{color:#fff;}
+.features-strip .section-sub{color:rgba(255,255,255,.45);}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;max-width:980px;margin:0 auto;}
+.feature-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:24px 20px;transition:all .25s;}
+.feature-card:hover{background:rgba(255,255,255,.07);border-color:rgba(74,124,89,.4);}
+.feat-ico{font-size:2rem;margin-bottom:12px;display:block;}
+.feature-card h3{color:#fff;font-weight:800;font-size:1rem;margin-bottom:6px;}
+.feature-card p{color:rgba(255,255,255,.48);font-size:.82rem;line-height:1.6;}
+
+/* ── APP SECTION ── */
+.app-section{padding:64px 20px;max-width:1000px;margin:0 auto;display:flex;flex-direction:column;align-items:center;}
+.tabs-wrap{display:flex;justify-content:center;gap:6px;margin-bottom:32px;background:var(--surface);border-radius:10px;padding:6px;box-shadow:var(--shadow);width:fit-content;margin-left:auto;margin-right:auto;border:1.5px solid var(--border);}
+.tab-btn{padding:11px 26px;border-radius:7px;border:none;font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:800;cursor:pointer;transition:all .22s;color:var(--muted);background:transparent;}
+.tab-btn.active{background:var(--brand);color:#fff;box-shadow:0 3px 12px rgba(74,124,89,.35);}
+.tab-btn:not(.active):hover{color:var(--brand);}
+.panel{display:none;width:100%;}.panel.active{display:block;animation:fadeU .35s ease both;width:100%;}
+
+/* ── FIELDS ── */
+.search-card,.form-card{background:var(--surface);border-radius:16px;padding:28px;box-shadow:var(--shadow);margin-bottom:24px;border:1.5px solid var(--border);}
+.search-card h2,.form-card h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--text);margin-bottom:18px;}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label{font-weight:800;font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;}
+.field input,.field select,.field textarea{padding:12px 15px;border:1.5px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:.95rem;outline:none;transition:border .2s;background:var(--fondo);color:var(--text);}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand);background:#fff;}
+.field textarea{resize:vertical;min-height:76px;}
+.search-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin-bottom:16px;}
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border-radius:10px;box-shadow:0 10px 36px rgba(0,0,0,.13);z-index:200;max-height:210px;overflow-y:auto;display:none;border:1.5px solid var(--border);}
+.ac-list div{padding:11px 15px;cursor:pointer;font-size:.92rem;font-weight:600;border-bottom:1px solid var(--border);transition:background .15s;}
+.ac-list div:last-child{border:none;}
+.ac-list div:hover{background:var(--fondo);color:var(--brand);}
+.loc-chip{display:none;align-items:center;gap:8px;background:var(--brand);color:#fff;padding:7px 14px;border-radius:6px;font-weight:700;font-size:.86rem;margin-top:8px;width:fit-content;}
+.loc-chip button{background:rgba(255,255,255,.22);border:none;color:#fff;cursor:pointer;width:18px;height:18px;border-radius:50%;font-size:.75rem;display:flex;align-items:center;justify-content:center;}
+.btn-search{width:100%;padding:14px;border:none;border-radius:9px;background:var(--brand);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;box-shadow:0 4px 16px rgba(74,124,89,.3);transition:all .2s;}
+.btn-search:hover{background:var(--brand2);transform:translateY(-1px);}
+.sort-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.sort-bar label{font-weight:700;font-size:.82rem;color:var(--muted);}
+.sort-select{padding:8px 13px;border:1.5px solid var(--border);border-radius:7px;font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:700;outline:none;background:#fff;cursor:pointer;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.full{grid-column:1/-1;}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:26px 18px;text-align:center;cursor:pointer;transition:all .22s;background:var(--fondo);}
+.upload-zone:hover{border-color:var(--brand);background:#EFF7F2;}
+.upload-zone input{display:none;}
+.upload-emoji{font-size:2.8rem;display:block;margin-bottom:8px;}
+.upload-zone p{color:var(--muted);font-size:.88rem;}
+.thumb-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px;}
+.thumb{position:relative;width:90px;height:90px;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.btn-pub{width:100%;padding:15px;margin-top:16px;border:none;border-radius:9px;background:var(--brand);color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:1.05rem;cursor:pointer;box-shadow:0 5px 20px rgba(74,124,89,.35);transition:all .2s;}
+.btn-pub:hover{background:var(--brand2);transform:translateY(-2px);}
+
+/* ── CARDS ── */
+.cards-grid{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;}
+.pet-card{background:var(--surface);width:252px;border-radius:16px;overflow:hidden;box-shadow:var(--shadow);transition:all .28s;border:1.5px solid var(--border);}
+.pet-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg);border-color:var(--brand2);}
+.pet-card.resuelta{opacity:.55;}
+.pet-card-img-wrap{position:relative;height:178px;overflow:hidden;}
+.pet-card-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform .4s;}
+.pet-card:hover .pet-card-img-wrap img{transform:scale(1.05);}
+.pet-card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.45),transparent 55%);}
+.pet-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;}
+.badge{padding:3px 10px;border-radius:4px;font-weight:800;font-size:.68rem;letter-spacing:.3px;}
+.badge-perdida{background:#C0392B;color:#fff;}
+.badge-encontrada{background:#27AE60;color:#fff;}
+.badge-tipo{background:rgba(255,255,255,.9);color:var(--text);}
+.badge-resuelta{background:#999;color:#fff;}
+.pet-card-body{padding:14px 16px 8px;}
+.pet-card-name{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--text);margin-bottom:4px;}
+.pet-card-info{font-size:.8rem;color:var(--muted);margin-bottom:2px;font-weight:600;}
+.pet-card-date{font-size:.71rem;color:#BBB;margin-top:6px;}
+.pet-card-actions{display:flex;gap:6px;padding:8px 12px 12px;}
+.btn-ver{flex:1;padding:8px;background:var(--brand);color:#fff;border:none;border-radius:7px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.86rem;cursor:pointer;transition:background .2s;}
+.btn-ver:hover{background:var(--brand2);}
+.btn-wpp{padding:8px 11px;background:#25D366;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.95rem;}
+.btn-share{padding:8px 11px;background:var(--dark2);color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.95rem;}
+.btn-resuelto{padding:8px 10px;background:#27AE60;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:800;}
+.no-res{text-align:center;padding:60px 20px;color:var(--muted);width:100%;}
+.no-res-emoji{font-size:4rem;display:block;margin-bottom:12px;}
+
+/* ── MAP ── */
+.map-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+.map-header h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--text);}
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--muted);}
+.legend-dot{width:12px;height:12px;border-radius:50%;}
+.ld-perdida{background:#C0392B;}.ld-encontrada{background:#27AE60;}.map-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.map-filter-btn{padding:7px 16px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;color:var(--muted);}
+.map-filter-btn.on{border-color:transparent;color:#fff;}
+.mfb-todas.on{background:var(--dark);}
+.mfb-perdida.on{background:#C0392B;}
+.mfb-encontrada.on{background:#27AE60;}
+#map{height:460px;border-radius:14px;box-shadow:var(--shadow);overflow:hidden;z-index:1;}
+.custom-popup .leaflet-popup-content-wrapper{border-radius:12px;padding:0;overflow:hidden;min-width:210px;}
+.custom-popup .leaflet-popup-content{margin:0;width:210px!important;}
+.custom-popup .leaflet-popup-tip-container{display:none;}
+.popup-img{width:100%;height:120px;object-fit:cover;display:block;}
+.popup-body{padding:10px 12px 12px;}
+.popup-name{font-family:'Playfair Display',serif;font-size:1rem;color:var(--text);}
+.popup-info{font-size:.78rem;color:var(--muted);margin-top:2px;font-weight:600;}
+.popup-btn{margin-top:9px;width:100%;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:7px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.86rem;cursor:pointer;}
+
+/* ── ALERTS ── */
+/* ── CHAT ── */
+/* ── SHARE ── */
+.share-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1600;align-items:center;justify-content:center;padding:20px;}
+.share-overlay.open{display:flex;}
+.share-box{background:#fff;border-radius:18px;padding:28px;max-width:370px;width:100%;text-align:center;}
+.share-box h3{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:6px;color:var(--text);}
+.share-box p{color:var(--muted);font-size:.88rem;margin-bottom:20px;font-weight:600;}
+.share-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.share-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;transition:transform .2s;}
+.share-btn:hover{transform:translateY(-3px);}
+.share-btn .share-ico{font-size:1.7rem;}
+.sb-wpp{background:#E8FEF0;color:#1a7a3c;} .sb-fb{background:#E8EEF8;color:#1a56b0;} .sb-ig{background:#FEF0F8;color:#c13584;} .sb-copy{background:var(--fondo);color:var(--muted);}
+.share-link{margin-top:14px;background:var(--fondo);border-radius:8px;padding:10px 13px;font-size:.8rem;color:var(--muted);word-break:break-all;text-align:left;font-weight:600;}
+.share-close{margin-top:14px;background:none;border:1.5px solid var(--border);border-radius:7px;padding:8px 20px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;color:var(--muted);}
+
+/* ── MODAL ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;justify-content:center;align-items:center;padding:20px;}
+.modal.open{display:flex;}
+.modal-box{background:#fff;border-radius:20px;max-width:470px;width:100%;max-height:92vh;overflow-y:auto;position:relative;animation:popIn .3s ease both;}
+.modal-imgs{display:flex;gap:6px;padding:7px;}
+.modal-img{flex:1;height:200px;border-radius:12px;object-fit:cover;}
+.modal-body{padding:20px;}
+.modal-close{position:absolute;top:13px;right:15px;background:rgba(0,0,0,.38);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.9rem;color:var(--text);margin:10px 0 7px;}
+.modal-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.92rem;font-weight:600;}
+.modal-row:last-of-type{border:none;}
+.m-icon{font-size:1rem;min-width:22px;}
+.modal-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;}
+.btn-modal-wpp{flex:1;padding:13px;background:#25D366;color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
+.btn-modal-share{padding:13px 16px;background:var(--dark2);color:#fff;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.9rem;cursor:pointer;}
+
+/* ── REVIEWS ── */
+.reviews-section{padding:80px 20px;background:var(--dark);position:relative;overflow:hidden;}
+.reviews-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 80%,rgba(74,124,89,.14),transparent 55%),radial-gradient(ellipse at 85% 20%,rgba(200,130,58,.08),transparent 55%);}
+.reviews-section .section-title{color:#fff;position:relative;}
+.reviews-section .section-sub{color:rgba(255,255,255,.4);position:relative;}
+.reviews-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:960px;margin:0 auto 40px;position:relative;}
+.review-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:24px;max-width:285px;flex:1 1 250px;transition:all .25s;}
+.review-card:hover{transform:translateY(-5px);background:rgba(255,255,255,.08);}
+.review-stars{color:var(--accent2);font-size:1rem;margin-bottom:12px;letter-spacing:2px;}
+.review-text{color:rgba(255,255,255,.78);font-size:.9rem;line-height:1.7;margin-bottom:16px;font-style:italic;}
+.review-author{display:flex;align-items:center;gap:11px;}
+.review-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.15);flex-shrink:0;}
+.review-avatar img{width:100%;height:100%;object-fit:cover;}
+.review-name{font-weight:800;color:#fff;font-size:.88rem;}
+.review-city{font-size:.74rem;color:rgba(255,255,255,.38);font-weight:600;}
+.add-review-wrap{max-width:520px;margin:0 auto;position:relative;}
+.add-review-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px;}
+.add-review-card h3{font-family:'Playfair Display',serif;color:#fff;font-size:1.4rem;margin-bottom:18px;}
+.rev-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:600;outline:none;margin-bottom:11px;}
+.rev-input::placeholder{color:rgba(255,255,255,.3);}
+.rev-input:focus{border-color:var(--brand2);}
+.rev-textarea{resize:vertical;min-height:78px;}
+.stars-picker{display:flex;gap:7px;margin-bottom:13px;font-size:1.5rem;cursor:pointer;}
+.stars-picker span{transition:transform .15s;user-select:none;}
+.stars-picker span:hover{transform:scale(1.2);}
+.btn-rev{width:100%;padding:13px;background:var(--brand);color:#fff;border:none;border-radius:9px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;}
+
+/* ── FOOTER ── */
+footer{background:var(--dark2);padding:32px 20px;text-align:center;color:rgba(255,255,255,.3);font-size:.83rem;border-top:1px solid rgba(255,255,255,.05);}
+footer strong{color:var(--accent2);}
+.footer-logo{font-family:'Playfair Display',serif;font-size:1.7rem;color:#fff;margin-bottom:10px;display:block;}
+.footer-links{display:flex;justify-content:center;gap:18px;margin:12px 0;flex-wrap:wrap;}
+.footer-links a{color:rgba(255,255,255,.35);text-decoration:none;font-size:.82rem;font-weight:700;transition:color .2s;}
+.footer-links a:hover{color:#fff;}
+
+/* ── FAB ── */
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--dark);color:#fff;padding:12px 22px;border-radius:9px;font-weight:700;font-size:.92rem;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;box-shadow:var(--shadow-lg);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@keyframes fadeD{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeU{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+@media(max-width:900px){.stat-box{padding:12px 18px;}.how-card{width:170px;}.review-card{max-width:none;}}
+@media(max-width:600px){
+  nav{padding:10px 16px;}.nav-links{display:none;}.nav-hamburger{display:flex;}
+  .hero{padding:78px 16px 40px;}.hero h1{font-size:2.4rem;}
+  .btn-h1,.btn-h2{width:100%;padding:13px;font-size:.95rem;}
+  .hero-btns{flex-direction:column;align-items:stretch;max-width:300px;}
+  .stats-section{padding:16px 0;}.stat-box{flex:1 1 50%;padding:10px 8px;border-right:none;border-bottom:1px solid rgba(255,255,255,.07);}
+  .stat-box:nth-child(odd){border-right:1px solid rgba(255,255,255,.07);}
+  .how{padding:48px 14px;}.how-grid{flex-direction:column;align-items:center;}.how-card{width:100%;max-width:100%;}
+  .features-grid{grid-template-columns:1fr;}
+  .app-section{padding:36px 12px;}.tabs-wrap{gap:4px;}.tab-btn{padding:9px 14px;font-size:.8rem;flex:1;}
+  .search-card,.form-card{padding:18px 13px;}.search-filters{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}.full{grid-column:1;}.cards-grid{gap:13px;}.pet-card{width:100%;max-width:100%;}
+  #map{height:290px;}.map-header{flex-direction:column;}
+  .modal-box{border-radius:16px;}.modal-imgs{flex-direction:column;}.modal-img{height:195px;flex:none;width:100%;}
+  .reviews-section{padding:50px 13px;}.review-card{flex:1 1 100%;}
+  .toast{left:14px;right:14px;transform:translateY(0);white-space:normal;text-align:center;}
+  .toast.show{transform:translateY(0);}
+  }
+
+/* ── RESPONSIVE EXTRA ── */
+.nav-links a.nav-link-item{color:rgba(255,255,255,.75);text-decoration:none;padding:7px 15px;border-radius:8px;font-weight:700;font-size:.86rem;transition:all .2s;}
+.nav-links a.nav-link-item:hover{background:rgba(255,255,255,.1);color:#fff;}
+@media(max-width:768px){
+  .login-box{padding:28px 20px;}
+  .hero h1{font-size:2.2rem;}
+  .stat-box{flex:1 1 45%;border-right:none;border-bottom:1px solid rgba(255,255,255,.07);}
+  .tabs-wrap{flex-wrap:wrap;}
+  .tab-btn{flex:1;min-width:80px;}
+  .form-grid{grid-template-columns:1fr;}
+  .pet-card{width:100%;}
+  .search-filters{grid-template-columns:1fr;}
+  .modal-box{margin:10px;max-height:95vh;}
+  .share-btns{justify-content:center;}
+  table{font-size:.78rem;}
+  table th,table td{padding:8px 10px;}
+}
+@media(max-width:480px){
+  nav{padding:0 14px;}
+  .nav-logo{font-size:1.1rem;}
+  .hero{padding:80px 14px 40px;}
+  .btn-h1,.btn-h2{padding:12px 20px;font-size:.9rem;}
+  .login-box{padding:22px 16px;}
+  .app-section{padding:28px 10px;}
+  .cards-grid{gap:10px;}
+}
+</style>
+</head>
+<body>
+
+
+<div id="login-screen">
+
+  <!-- ══ PANEL ADMIN (oculto por defecto) ══ -->
+  <div id="admin-login-panel" style="display:none;width:100%;max-width:360px;">
+    <div class="login-box">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#1E2B22;letter-spacing:5px;font-weight:700;">R.A.D.A.R.</div>
+        <div style="font-size:.65rem;color:#7A8C80;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;">Rastreo de Animales Desaparecidos</div>
+      </div>
+      <div style="background:var(--dark);color:var(--accent2);border-radius:10px;padding:10px 16px;font-size:.8rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">🔐 Acceso Administrador</div>
+      <label class="login-field-label">Contraseña de administrador</label>
+      <div class="pwd-wrap">
+        <input class="login-field" type="password" id="adm-pwd" placeholder="Contraseña secreta" onkeydown="if(event.key==='Enter')doLoginAdmin()" style="margin-bottom:0;padding-right:44px;">
+        <button type="button" class="pwd-toggle" onclick="togglePwd('adm-pwd',this)" tabindex="-1">👁️</button>
+      </div>
+      <div class="login-error" id="adm-err" style="margin-bottom:8px;"></div>
+      <button type="button" class="login-btn" onclick="doLoginAdmin()">Entrar como Admin</button>
+      <button type="button" onclick="volverLogin()" style="margin-top:10px;background:none;border:none;color:var(--muted);font-family:Nunito,sans-serif;font-size:.85rem;cursor:pointer;width:100%;">← Volver al login</button>
+    </div>
+  </div>
+
+  <!-- ══ PANEL USUARIO (visible por defecto) ══ -->
+  <div id="user-login-panel" style="width:100%;max-width:400px;">
+    <div class="login-box">
+      <div style="display:flex;justify-content:center;margin-bottom:8px;">
+        
+      </div>
+      <div class="login-title">R.A.D.A.R.</div>
+      <div class="login-sub">Tu espacio para encontrar y reportar mascotas</div>
+
+      <div class="login-tabs">
+        <button type="button" class="login-tab active" onclick="switchLoginTab('login')">Iniciar sesión</button>
+        <button type="button" class="login-tab" onclick="switchLoginTab('register')">Crear cuenta</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="login-form active" id="lf-login">
+        <label class="login-field-label">Email</label>
+        <input class="login-field" type="email" id="li-email" placeholder="tu@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('li-pwd').focus()">
+        <label class="login-field-label">Contraseña</label>
+        <div class="pwd-wrap">
+          <input class="login-field" type="password" id="li-pwd" placeholder="Tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="margin-bottom:0;padding-right:44px;">
+          <button type="button" class="pwd-toggle" onclick="togglePwd('li-pwd',this)" tabindex="-1">👁️</button>
+        </div>
+        <div class="login-error" id="li-err"></div>
+        <button type="button" class="login-btn" onclick="doLogin()">Ingresar</button>
+        <!-- Botón especial admin — discreto abajo -->
+        <button type="button" onclick="abrirPanelAdmin()"
+          style="margin-top:14px;width:100%;padding:9px;background:transparent;border:1.5px dashed rgba(30,43,34,.2);border-radius:9px;font-family:Nunito,sans-serif;font-size:.78rem;font-weight:700;color:rgba(30,43,34,.35);cursor:pointer;transition:all .2s;"
+          onmouseover="this.style.borderColor='var(--brand)';this.style.color='var(--brand)'"
+          onmouseout="this.style.borderColor='rgba(30,43,34,.2)';this.style.color='rgba(30,43,34,.35)'">
+          🔐 Administrador
+        </button>
+      </div>
+
+      <!-- REGISTRO -->
+      <div class="login-form" id="lf-register">
+        <div id="rg-verify-msg" style="display:none;background:#EFF7F2;border:1.5px solid #B2D8C0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.88rem;color:#1E5C35;font-weight:700;text-align:left;line-height:1.6;"></div>
+        <label class="login-field-label">Nombre completo</label>
+        <input class="login-field" type="text" id="rg-name" placeholder="Ej: María García" autocomplete="name">
+        <label class="login-field-label">Email</label>
+        <input class="login-field" type="email" id="rg-email" placeholder="tu@email.com" autocomplete="email">
+        <label class="login-field-label">Contraseña</label>
+        <div class="pwd-wrap">
+          <input class="login-field" type="password" id="rg-pwd" placeholder="Mínimo 6 caracteres" autocomplete="new-password" oninput="checkStrength(this.value)" style="margin-bottom:0;padding-right:44px;">
+          <button type="button" class="pwd-toggle" onclick="togglePwd('rg-pwd',this)" tabindex="-1">👁️</button>
+        </div>
+        <div class="login-strength" id="pwd-strength"></div>
+        <label class="login-field-label">Repetir contraseña</label>
+        <div class="pwd-wrap">
+          <input class="login-field" type="password" id="rg-pwd2" placeholder="Repetí la contraseña" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()" style="margin-bottom:0;padding-right:44px;">
+          <button type="button" class="pwd-toggle" onclick="togglePwd('rg-pwd2',this)" tabindex="-1">👁️</button>
+        </div>
+        <div class="login-error" id="rg-err"></div>
+        <div class="login-success" id="rg-ok"></div>
+        <button type="button" class="login-btn" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="paws-canvas" aria-hidden="true"></div>
+<nav id="mainNav">
+  <a class="nav-logo" href="#" style="display:flex;flex-direction:column;align-items:flex-start;line-height:1;text-decoration:none;">
+    <span style="font-family:'Playfair Display',serif;font-size:1.6rem;color:#fff;letter-spacing:4px;font-weight:700;">R.A.D.A.R.</span>
+    <span style="font-size:.52rem;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;">Rastreo de Animales Desaparecidos</span>
+  </a>
+  <div class="nav-links">
+    <a href="#" onclick="showPage('main');return false" id="nav-main">Inicio</a>
+    <a href="#" onclick="cerrarSesion();return false" style="color:rgba(255,255,255,.5);font-size:.8rem;">Salir</a>
+    <a href="#" onclick="showPage('info');return false" id="nav-info">Cómo funciona</a>
+    <a href="#" class="cta" onclick="showPage('main');setTimeout(()=>switchTab('publicar'),300);return false">Publicar</a>
+  </div>
+  <button class="nav-hamburger" id="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-mobile" id="nav-mobile">
+  <a href="#" onclick="showPage('main');closeMobileNav()">🔍 Buscar mascota</a>
+  <a href="#" onclick="showPage('info');closeMobileNav()">❓ Cómo funciona y Reseñas</a>
+  <a href="#" onclick="showPage('main');setTimeout(()=>switchTab('publicar'),300);closeMobileNav()" style="background:var(--accent);color:#fff;">Publicar</a>
+</div>
+
+<div id="page-main" style="position:relative;z-index:1;">
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orb orb1"></div>
+  <div class="hero-orb orb2"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">🐾 La red de mascotas de Argentina</div>
+    <h1><em>R.A.D.A.R.</em></h1>
+    <p class="hero-sub" style="font-size:.88rem;letter-spacing:1px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px;">Rastreo de Animales Desaparecidos con Alerta Regional</p><p class="hero-sub">Publicá, buscá y conectá con personas de toda Argentina. Mapa en vivo y compartir en redes.</p>
+    <div class="hero-urgente">🔍 Mascotas reportadas hoy en tu zona</div>
+    <div class="hero-btns">
+      <button class="btn-h1" onclick="goToApp('buscar')">Buscar mascota</button>
+      <button class="btn-h2" onclick="goToApp('publicar')">Publicar aviso</button>
+    </div>
+  </div>
+  <svg class="hero-wave" viewBox="0 0 1440 70" preserveAspectRatio="none">
+    <path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="#4A7C59"/>
+  </svg>
+</section>
+
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<div class="stats-section">
+  <div class="stat-box"><span class="stat-num" id="s-total">5</span><span class="stat-lbl">Publicaciones</span></div>
+  <div class="stat-box"><span class="stat-num">689</span><span class="stat-lbl">Localidades</span></div>
+  <div class="stat-box"><span class="stat-num">47</span><span class="stat-lbl">Reunidas ❤️</span></div>
+</div>
+
+
+
+
+<section id="app" class="app-section">
+  <div class="tabs-wrap">
+    <button class="tab-btn active" id="tb-buscar" onclick="switchTab('buscar')">🔍 Buscar</button>
+    <button class="tab-btn" id="tb-publicar" onclick="switchTab('publicar')">📢 Publicar</button>
+    <button class="tab-btn" id="tb-mapa" onclick="switchTab('mapa')">🗺️ Mapa</button>
+  </div>
+
+  <div class="panel active" id="panel-buscar">
+    <div class="search-card">
+      <h2>¿Dónde la viste o la perdiste?</h2>
+      <div class="field">
+        <label>Localidad / Ciudad *</label>
+        <div class="ac-wrap">
+          <input type="text" id="b-loc" placeholder="Escribí tu localidad y seleccioná de la lista..." autocomplete="off">
+          <div class="ac-list" id="b-ac"></div>
+        </div>
+        <div class="loc-chip" id="b-chip"><span id="b-chip-txt"></span><button onclick="clearChip('b')">✕</button></div>
+      </div>
+      <div class="search-filters">
+        <div class="field" style="margin:0"><label>Estado</label><select id="f-estado"><option value="Todos">Todos</option><option value="Perdida">Perdida</option><option value="Encontrada">Encontrada</option></select></div>
+        <div class="field" style="margin:0"><label>Tipo</label><select id="f-tipo"><option value="Todos">Todos</option><option value="Perro">Perro</option><option value="Gato">Gato</option><option value="Loro">Loro</option><option value="Conejo">Conejo</option><option value="Otro">Otro</option></select></div>
+      </div>
+      <button class="btn-search" onclick="buscar()">Buscar mascotas</button>
+    </div>
+    <div class="sort-bar">
+      <label>Ordenar por:</label>
+      <select class="sort-select" id="sort-sel" onchange="aplicarOrden()">
+        <option value="reciente">Más reciente</option>
+        <option value="antiguo">Más antiguo</option>
+        <option value="nombre">Nombre A-Z</option>
+        <option value="resuelta">Ocultar resueltas</option>
+      </select>
+    </div>
+    <div class="cards-grid" id="resultados"></div>
+  </div>
+
+  <div class="panel" id="panel-publicar">
+    <div class="form-card">
+      <h2>Publicar una mascota</h2>
+      <div class="form-grid">
+        <div class="field"><label>Nombre *</label><input type="text" id="p-nombre" placeholder="Ej: Luna"></div>
+        <div class="field"><label>Tipo *</label><select id="p-tipo"><option value="">Seleccioná...</option><option value="Perro">Perro</option><option value="Gato">Gato</option><option value="Loro">Loro</option><option value="Conejo">Conejo</option><option value="Otro">Otro</option></select></div>
+        <div class="field"><label>Estado *</label><select id="p-estado"><option value="">Seleccioná...</option><option value="Perdida">Perdida</option><option value="Encontrada">Encontrada</option></select></div>
+        <div class="field"><label>Edad (años)</label><input type="number" id="p-edad" placeholder="Ej: 3" min="0" max="30"></div>
+        <div class="field"><label>Localidad *</label>
+          <div class="ac-wrap"><input type="text" id="p-loc" placeholder="Escribí y seleccioná..." autocomplete="off"><div class="ac-list" id="p-ac"></div></div>
+          <div class="loc-chip" id="p-chip"><span id="p-chip-txt"></span><button onclick="clearChip('p')">✕</button></div>
+        </div>
+        <div class="field"><label>Contacto *</label><input type="text" id="p-contacto" placeholder="Tel o email"></div>
+        <div class="field"><label>Raza / Color</label><input type="text" id="p-raza" placeholder="Ej: Labrador dorado"></div>
+        <div class="field full"><label>Descripción</label><input type="text" id="p-desc" placeholder="Collar rojo, muy amigable con niños..."></div>
+        <div class="field full">
+          <label>Fotos (hasta 2)</label>
+          <div class="upload-zone" onclick="document.getElementById('p-fotos').click()">
+            <span class="upload-emoji">📸</span>
+            <p><strong>Tocá para elegir fotos de tu galería</strong></p>
+            <p style="font-size:.76rem;color:#bbb;margin-top:3px">JPG o PNG · Hasta 2 imágenes</p>
+            <input type="file" id="p-fotos" accept="image/*" multiple>
+          </div>
+          <div class="thumb-row" id="thumbs"></div>
+        </div>
+      </div>
+      <button class="btn-pub" onclick="publicar()">Publicar mascota 🐾</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-mapa">
+    <div class="search-card">
+      <div class="map-header">
+        <h2>Mascotas en el mapa</h2>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot ld-perdida"></div>Perdida</div>
+          <div class="legend-item"><div class="legend-dot ld-encontrada"></div>Encontrada</div>
+          
+        </div>
+      </div>
+      <div class="map-filters">
+        <button class="map-filter-btn mfb-todas on" data-f="Todas" onclick="filtrarMapa(this)">Todas</button>
+        <button class="map-filter-btn mfb-perdida" data-f="Perdida" onclick="filtrarMapa(this)">Perdidas</button>
+        <button class="map-filter-btn mfb-encontrada" data-f="Encontrada" onclick="filtrarMapa(this)">Encontradas</button>
+        
+      </div>
+      <div id="map"></div>
+    </div>
+  </div>
+</section>
+
+
+</div><!-- fin page-main -->
+
+<div id="page-info" style="display:none;position:relative;z-index:1;">
+<section class="features-strip">
+  <div class="section-title">Todo en un solo lugar</div>
+  <div class="section-sub">Herramientas reales para reunir familias</div>
+  <div class="features-grid">
+    
+    <div class="feature-card"><span class="feat-ico">🗺️</span><h3>Mapa en tiempo real</h3><p>Mirá todos los avisos con filtros por tipo y estado.</p></div>
+    
+    
+    <div class="feature-card"><span class="feat-ico">🔁</span><h3>Compartir en 1 toque</h3><p>WhatsApp, Facebook, Instagram.</p></div>
+    <div class="feature-card"><span class="feat-ico">✅</span><h3>Marcar como resuelta</h3><p>Cerrá el aviso cuando la mascota fue encontrada.</p></div>
+  </div>
+</section>
+
+<section class="how" id="como">
+  <div class="section-title">¿Cómo funciona?</div>
+  <div class="section-sub">Simple y gratuito en 6 pasos</div>
+  <div class="how-grid">
+    <div class="how-card"><div class="how-icon-wrap c1">📢</div><div class="how-num">1</div><h3>Publicá</h3><p>Subí fotos reales desde tu galería y describí a tu mascota.</p></div>
+    <div class="how-card"><div class="how-icon-wrap c2">🔍</div><div class="how-num">2</div><h3>Buscá</h3><p>Filtrá por tu localidad exacta entre 689 ciudades.</p></div>
+    
+    
+    <div class="how-card"><div class="how-icon-wrap c5">🔁</div><div class="how-num">5</div><h3>Compartí</h3><p>Difundí en redes con un solo toque.</p></div>
+    <div class="how-card"><div class="how-icon-wrap c6">🏠</div><div class="how-num">6</div><h3>¡Reunidos!</h3><p>Marcá como resuelta y dejá tu reseña.</p></div>
+  </div>
+</section>
+
+<section class="reviews-section" id="resenas">
+  <div class="section-title">Lo que dice la comunidad</div>
+  <div class="section-sub">Historias reales de personas que usaron la plataforma</div>
+  <div class="reviews-grid" id="reviews-grid"></div>
+  <div class="add-review-wrap">
+    <div class="add-review-card">
+      <h3>Dejá tu reseña</h3>
+      <div class="stars-picker" id="stars-picker"><span data-v="1">☆</span><span data-v="2">☆</span><span data-v="3">☆</span><span data-v="4">☆</span><span data-v="5">☆</span></div>
+      <input class="rev-input" type="text" id="rev-nombre" placeholder="Tu nombre">
+      <input class="rev-input" type="text" id="rev-ciudad" placeholder="Tu ciudad">
+      <textarea class="rev-input rev-textarea" id="rev-texto" placeholder="Contanos tu experiencia..."></textarea>
+      <button class="btn-rev" onclick="agregarResena()">Publicar reseña</button>
+    </div>
+  </div>
+</section>
+
+</div><!-- fin page-info -->
+
+
+<footer>
+  <span class="footer-logo" style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+    <span style="font-family:'Playfair Display',serif;font-size:1.8rem;letter-spacing:5px;">R.A.D.A.R.</span>
+    <span style="font-size:.68rem;color:rgba(255,255,255,.35);letter-spacing:1.5px;font-weight:600;">Rastreo de Animales Desaparecidos con Alerta Regional</span>
+  </span>
+  <div class="footer-links"><a href="#" onclick="showPage('main');return false">Inicio</a><a href="#" onclick="showPage('info');return false">Cómo funciona</a><a href="#" onclick="showPage('info');return false">Reseñas</a></div>
+  <p>Hecho con ❤️ · <strong>R.A.D.A.R.</strong> · Argentina 🇦🇷 · Gratuito para siempre</p>
+</footer>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-imgs" id="m-imgs"></div>
+    <div class="modal-body">
+      <div id="m-badges" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px;"></div>
+      <div class="modal-title" id="m-name"></div>
+      <div id="m-rows"></div>
+      <div class="modal-actions">
+        <button class="btn-modal-wpp" id="m-wpp">📲 WhatsApp</button>
+        
+        <button class="btn-modal-share" id="m-share">🔁 Compartir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="share-overlay" id="shareOverlay">
+  <div class="share-box">
+    <h3>Compartir aviso</h3>
+    <p>Compartí y ayudá a que más personas lo vean</p>
+    <div class="share-btns">
+      <button class="share-btn sb-wpp" onclick="shareWpp()"><span class="share-ico">💬</span>WhatsApp</button>
+      <button class="share-btn sb-fb" onclick="shareFb()"><span class="share-ico">📘</span>Facebook</button>
+      <button class="share-btn sb-ig" onclick="shareIg()"><span class="share-ico">📸</span>Instagram</button>
+      <button class="share-btn sb-copy" onclick="copiarLink()"><span class="share-ico">🔗</span>Copiar link</button>
+    </div>
+    <div class="share-link" id="share-link-txt"></div>
+    <button class="share-close" onclick="closeShare()">Cerrar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const LOCS=["Agronomía", "Almagro", "Balvanera", "Barracas", "Belgrano", "Boedo", "Caballito", "Chacarita", "Coghlan", "Colegiales", "Constitución", "Flores", "Floresta", "La Boca", "La Paternal", "Liniers", "Mataderos", "Monte Castro", "Montserrat", "Nueva Pompeya", "Núñez", "Once", "Palermo", "Palermo Soho", "Palermo Hollywood", "Palermo Chico", "Parque Avellaneda", "Parque Chacabuco", "Parque Chas", "Parque Patricios", "Puerto Madero", "Recoleta", "Retiro", "Saavedra", "San Cristóbal", "San Nicolás", "San Telmo", "Tribunales", "Vélez Sársfield", "Versalles", "Villa Crespo", "Villa del Parque", "Villa Devoto", "Villa Gral. Mitre", "Villa Lugano", "Villa Luro", "Villa Ortúzar", "Villa Pueyrredón", "Villa Real", "Villa Riachuelo", "Villa Santa Rita", "Villa Soldati", "Villa Urquiza", "Acassuso", "Béccar", "Martínez", "Olivos", "La Lucila", "San Isidro", "Villa Adelina", "Carapachay", "Florida", "Munro", "Vicente López", "Villa Martelli", "Virreyes", "San Fernando", "Victoria", "Tigre", "Don Torcuato", "El Talar", "General Pacheco", "Ingeniero Maschwitz", "Rincón de Milberg", "Ricardo Rojas", "Benavídez", "Dique Luján", "El Recreo", "Nordelta", "Benavidez", "San Martín", "Villa Maipú", "Villa Lynch", "José León Suárez", "Santos Lugares", "Caseros", "Ciudadela", "El Palomar", "Hurlingham", "Ituzaingó", "Loma Hermosa", "Pablo Podestá", "Ramos Mejía", "Remedios de Escalada", "Sáenz Peña", "Villa Bosch", "Villa Santos Lugares", "Villa Tesei", "William Morris", "Escobar", "Belén de Escobar", "Matheu", "Maquinista Savio", "Garín", "Pilar", "Del Viso", "Fátima", "Derqui", "Villa Rosa", "Presidente Derqui", "Manuel Alberti", "Zelaya", "Grand Bourg", "Los Polvorines", "Malvinas Argentinas", "Ing. Adolfo Surdeaux", "Pablo Nogués", "José C. Paz", "San Miguel", "Bella Vista", "Campo de Mayo", "Muñiz", "Tierras Altas", "Banfield", "Llavallol", "Lomas de Zamora", "Temperley", "Turdera", "Villa Centenario", "Villa Fiorito", "Villa Insuperable", "Gerli", "Lanús", "Lanús Este", "Lanús Oeste", "Monte Chingolo", "Villa Caraza", "Avellaneda", "Dock Sud", "Crucecita", "Piñeyro", "Sarandí", "Villa Domínico", "Wilde", "Bernal", "Bernal Oeste", "Don Bosco", "Ezpeleta", "Quilmes", "Quilmes Oeste", "San Francisco Solano", "Villa La Florida", "Berazategui", "Berazategui Oeste", "El Pato", "Hudson", "Juan María Gutiérrez", "Ranelagh", "Villa España", "Bosques", "Florencio Varela", "Gobernador Julio A. Costa", "Ingeniero Juan Allan", "Ingeniero Budge", "La Carolina", "Los Eucaliptos", "Zeballos", "Adrogué", "Burzaco", "Claypole", "Don Orione", "Glew", "José Mármol", "Longchamps", "Ministro Rivadavia", "Monte Grande", "Rafael Calzada", "San José", "San Francisco de Asís", "Solano", "El Jagüel", "La Unión", "Luis Guillón", "9 de Abril", "Carlos Spegazzini", "Canning", "Ezeiza", "Tristán Suárez", "Guernica", "San Vicente", "Castelar", "Castelar Norte", "Castelar Sur", "Haedo", "Morón", "Villa Sarmiento", "Ituzaingó Norte", "Ituzaingó Sur", "Ciudad Evita", "Ciudad Madero", "González Catán", "Gregorio de Laferrere", "Isidro Casanova", "La Tablada", "Lomas del Mirador", "Rafael Castillo", "San Justo", "Tapiales", "Virrey del Pino", "Libertad", "Mariano Acosta", "Merlo", "Paso del Rey", "Pontevedra", "San Antonio de Padua", "Francisco Álvarez", "La Reja", "Moreno", "Moreno Centro", "Trujui", "General Rodríguez", "Marcos Paz", "Luján", "Olivera", "Torres", "Zárate", "Campana", "Exaltación de la Cruz", "Capilla del Señor", "Lima", "San Pedro", "Ramallo", "San Nicolás de los Arroyos", "Villa Constitución", "Baradero", "Pergamino", "Colón", "Salto", "Rojas", "San Antonio de Areco", "Junín", "Chacabuco", "Lincoln", "Leandro N. Alem", "Bragado", "9 de Julio", "Trenque Lauquen", "Pehuajó", "Bolívar", "Olavarría", "Tandil", "Azul", "Laprida", "Rauch", "Balcarce", "Mar del Plata", "General Pueyrredón", "Miramar", "Necochea", "Quequén", "Lobería", "Tres Arroyos", "San Cayetano", "González Chávez", "Bahía Blanca", "Coronel Rosales", "Punta Alta", "Monte Hermoso", "Cnel. Dorrego", "Coronel Suárez", "Pigüé", "Tornquist", "Sierra de la Ventana", "Villarino", "Médanos", "Río Colorado", "Patagones", "Carmen de Patagones", "Puán", "Guaminí", "Adolfo Alsina", "Carhué", "Daireaux", "General La Madrid", "Benito Juárez", "San Carlos de Bolívar", "Tapalqué", "Chascomús", "Castelli", "Pila", "General Belgrano", "Monte", "Roque Pérez", "Saladillo", "Las Flores", "Alvear", "Brandsen", "Lobos", "Navarro", "Mercedes", "Gral. Las Heras", "Alberti", "Chivilcoy", "Suipacha", "General Sarmiento", "La Plata", "Ensenada", "Berisso", "Magdalena", "Dolores", "Tordillo", "Maipú", "Gral. Lavalle", "Mar Chiquita", "Villa Gesell", "Pinamar", "General Madariaga", "La Costa", "San Bernardo", "Mar de Ajó", "Aguas Verdes", "Córdoba", "Alta Gracia", "Villa del Lago", "Anisacate", "La Bolsa", "Villa Carlos Paz", "Cosquín", "La Falda", "Cruz del Eje", "Capilla del Monte", "Jesús María", "Colonia Caroya", "Sinsacate", "Bell Ville", "Río Tercero", "Almafuerte", "Río Cuarto", "Las Higueras", "Santa Rosa de Río Primero", "Villa María", "Villa Nueva", "Etruria", "San Francisco", "Frontera", "Marcos Juárez", "Leones", "Inriville", "Laboulaye", "General Deheza", "Huinca Renancó", "La Carlota", "Ucacha", "Mina Clavero", "Nono", "Cura Brochero", "Traslasierra", "Villa Dolores", "Chancaní", "Oliva", "General Cabrera", "Río Ceballos", "Unquillo", "La Calera", "Mendiolaza", "Villa Allende", "Malagueño", "Falda del Cañete", "Arroyito", "Obispo Trejo", "Monte Cristo", "Morteros", "Porteña", "Dean Funes", "Quilino", "Deán Funes", "Embalse", "Villa Rumipal", "Los Cóndores", "Villa del Totoral", "Las Varas", "Rosario", "Granadero Baigorria", "Capitán Bermúdez", "Fray Luis Beltrán", "San Lorenzo", "Puerto General San Martín", "Pérez", "Soldini", "Álvarez", "Villa Gobernador Gálvez", "Rosario Sur", "Roldán", "Zavalla", "Santa Fe", "Santo Tomé", "Recreo", "Esperanza", "San Carlos Centro", "Rafaela", "Sunchales", "Josefina", "Reconquista", "Malabrigo", "Las Toscas", "Venado Tuerto", "Rufino", "Melincué", "Cañada de Gómez", "Casilda", "Firmat", "Arequito", "San Jorge", "Sastre", "Gálvez", "Villa Ocampo", "Romang", "La Gallareta", "Tostado", "Ceres", "Vera", "Arroyo Seco", "Empalme Villa Constitución", "Piamonte", "Armstrong", "Carcarañá", "Las Parejas", "Las Rosas", "Moisés Ville", "Suardi", "Mendoza", "Godoy Cruz", "Guaymallén", "Las Heras", "Luján de Cuyo", "Chacras de Coria", "Vistalba", "Agrelo", "San Rafael", "General Alvear", "Malargüe", "Rivadavia", "La Paz", "Tunuyán", "San Carlos", "Eugenio Bustos", "Palmira", "Santa Rosa", "Ciudad de Mendoza", "Dorrego", "Russell", "Perdriel", "San Miguel de Tucumán", "Yerba Buena", "Tafí Viejo", "Banda del Río Salí", "Concepción", "Monteros", "Aguilares", "Lules", "Famailla", "Alderetes", "Las Talitas", "El Manantial", "Tafí del Valle", "Amaicha del Valle", "La Cocha", "Graneros", "Juan Bautista Alberdi", "Villa Benjamín Araoz", "Burruyacu", "Salta", "General Güemes", "Tartagal", "Orán", "Embarcación", "Metán", "Rosario de la Frontera", "Joaquín V. González", "Cafayete", "Cachi", "Molinos", "La Caldera", "Cerrillos", "Rosario de Lerma", "El Galpón", "Aguaray", "Prof. Salvador Mazza", "San Salvador de Jujuy", "Palpalá", "San Pedro de Jujuy", "Libertador General San Martín", "Ledesma", "La Quiaca", "Humahuaca", "Tilcara", "Purmamarca", "Abra Pampa", "Caimancito", "Santa Clara", "Posadas", "Garupá", "Fachinal", "Oberá", "Campo Viera", "Eldorado", "Montecarlo", "Puerto Rico", "Iguazú", "Puerto Esperanza", "Apóstoles", "Azara", "Concepción de la Sierra", "San Ignacio", "Jardín América", "Aristóbulo del Valle", "Dos de Mayo", "Bernardo de Irigoyen", "El Soberbio", "Paraná", "Crespo", "Diamante", "Nogoyá", "Concordia", "Federación", "Federal", "Concepción del Uruguay", "Gualeguay", "Rosario del Tala", "Gualeguaychú", "Islas del Ibicuy", "Bovril", "Santa Elena", "Villaguay", "Basavilbaso", "Corrientes", "Riachuelo", "Santa Ana", "Goya", "Esquina", "Sauce", "Curuzú Cuatiá", "Monte Caseros", "Paso de los Libres", "Yapeyú", "Gobernador Virasoro", "Saladas", "Resistencia", "Barranqueras", "Fontana", "Puerto Vilelas", "Presidencia Roque Sáenz Peña", "Villa Ángela", "Charata", "General Pinedo", "Machagai", "Pampa del Infierno", "Corzuela", "Las Breñas", "Quitilipi", "La Eduvigis", "Villa Berthet", "Juan José Castelli", "Miraflores", "Formosa", "Clorinda", "El Colorado", "Pirané", "General Lucio Victorio Mansilla", "Las Lomitas", "Ingeniero Juárez", "Ibarreta", "Santiago del Estero", "La Banda", "Termas de Río Hondo", "Frías", "Añatuya", "Loreto", "Monte Quemado", "Quimilí", "Suncho Corral", "Fernández", "Forres", "Villa Atamisqui", "San Juan", "Rawson", "Chimbas", "Santa Lucía", "Pocito", "Albardón", "Angaco", "Caucete", "Sarmiento", "Jachal", "Iglesia", "Valle Fértil", "La Rioja", "Chilecito", "Chamical", "Chepes", "Aimogasta", "Tinogasta", "Villa Unión", "Nonogasta", "San Fernando del Valle de Catamarca", "Andalgalá", "Belén", "Santa María", "Fiambalá", "Villa de Baldes", "Pomán", "San Luis", "Villa Mercedes", "Justo Daract", "La Toma", "Buena Esperanza", "Quines", "Arizona", "Tilisarao", "Concarán", "Neuquén", "Centenario", "Plottier", "Vista Alegre", "San Martín de los Andes", "Villa La Angostura", "Junín de los Andes", "Zapala", "Piedra del Águila", "Chos Malal", "Cutral Có", "Plaza Huincul", "Rincón de los Sauces", "Las Lajas", "Loncopué", "Alumine", "Viedma", "San Antonio Oeste", "Bariloche", "El Bolsón", "Dina Huapi", "Cipolletti", "General Roca", "Allen", "Cinco Saltos", "Catriel", "Añelo", "Sierra Grande", "Las Grutas", "Choele Choel", "Lamarque", "Trelew", "Puerto Madryn", "Comodoro Rivadavia", "Rada Tilly", "Esquel", "Trevelín", "El Maitén", "Perito Moreno", "Puerto Pirámides", "Gaiman", "Dolavon", "Río Mayo", "Alto Río Senguer", "Río Gallegos", "Punta Arenas", "28 de Noviembre", "Caleta Olivia", "Pico Truncado", "El Calafate", "El Chaltén", "Puerto Deseado", "San Julián", "Gobernador Gregores", "Ushuaia", "Río Grande", "Tolhuin", "General Pico", "General Acha", "Toay", "Realicó", "Victorica", "Macachín", "Eduardo Castex", "Intendente Alvear", "Catriló", "Lonquimay", "Andacollo", "Buta Ranquil"];
+const COORDS={"Buenos Aires":[-34.6037,-58.3816],"Palermo":[-34.5827,-58.43],"Belgrano":[-34.5603,-58.4573],"Caballito":[-34.6167,-58.4333],"Villa Urquiza":[-34.575,-58.4833],"Almagro":[-34.6083,-58.425],"Floresta":[-34.63,-58.48],"Córdoba":[-31.4201,-64.1888],"Rosario":[-32.9468,-60.6393],"Mendoza":[-32.8908,-68.8272],"La Plata":[-34.9205,-57.9536],"Mar del Plata":[-38.0023,-57.5575],"Tucumán":[-26.8241,-65.2226],"San Miguel de Tucumán":[-26.8241,-65.2226],"Salta":[-24.7859,-65.4117],"Santa Fe":[-31.6333,-60.7],"San Juan":[-31.5375,-68.5364],"Resistencia":[-27.4513,-58.9861],"Corrientes":[-27.4806,-58.8341],"Posadas":[-27.3671,-55.896],"Paraná":[-31.7333,-60.5333],"Neuquén":[-38.9516,-68.0591],"Bahía Blanca":[-38.7183,-62.2663],"Formosa":[-26.1775,-58.1781],"San Salvador de Jujuy":[-24.1858,-65.2995],"Santiago del Estero":[-27.7951,-64.2615],"Río Cuarto":[-33.1232,-64.3493],"San Luis":[-33.295,-66.3356],"Comodoro Rivadavia":[-45.8647,-67.4977],"Viedma":[-40.8135,-62.9967],"Santa Rosa":[-36.6167,-64.2833],"Rawson":[-43.3002,-65.1023],"Ushuaia":[-54.8019,-68.303],"Río Gallegos":[-51.623,-69.2168],"San Rafael":[-34.6177,-68.3301],"Rafaela":[-31.2522,-61.4867],"Reconquista":[-29.1447,-59.6436],"Quilmes":[-34.7206,-58.2536],"Lomas de Zamora":[-34.7593,-58.3978],"Lanús":[-34.7006,-58.3894],"San Martín":[-34.5697,-58.5386],"Morón":[-34.6534,-58.6197],"Tigre":[-34.426,-58.5796],"San Isidro":[-34.4726,-58.5271],"Vicente López":[-34.527,-58.4753],"Florencio Varela":[-34.8079,-58.2764],"Berazategui":[-34.7647,-58.2103],"Merlo":[-34.6729,-58.7269],"Moreno":[-34.6393,-58.7914],"Rafael Calzada":[-34.7833,-58.35],"Almirante Brown":[-34.8,-58.3833],"Burzaco":[-34.8333,-58.3833],"Monte Grande":[-34.8167,-58.4667],"Glew":[-34.8833,-58.3833],"Pilar":[-34.4597,-58.9147],"Madryn":[-42.7683,-65.0355],"Trelew":[-43.2489,-65.3025],"Bariloche":[-41.1335,-71.3103]};
+
+// ── PERSISTENCIA localStorage ──
+const LS_MASCOTAS  = "mc_mascotas";
+const LS_RESENAS   = "mc_resenas";
+const LS_NEXTID    = "mc_nextid";
+
+function lsGet(key, def){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):def; }catch(e){return def;} }
+function lsSet(key, val){
+  try{
+    localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  }catch(e){
+    // Si supera el limite de almacenamiento, guardar sin fotos b64
+    if(e.name==='QuotaExceededError' || e.code===22){
+      try{
+        var limpio = JSON.parse(JSON.stringify(val));
+        if(Array.isArray(limpio)){
+          limpio.forEach(function(m){
+            if(m.fotos) m.fotos = m.fotos.map(function(f){
+              return f.startsWith('data:') ? 'https://placedog.net/300/200' : f;
+            });
+          });
+        }
+        localStorage.setItem(key, JSON.stringify(limpio));
+      }catch(e2){}
+    }
+    return false;
+  }
+}
+
+// Cargar datos — si no hay nada guardado usa los datos de ejemplo
+let mascotas   = lsGet(LS_MASCOTAS, [
+  {id:1,nombre:"Rocky",edad:2,tipo:"Perro",estado:"Perdida",localidad:"Palermo",contacto:"11-1111-1111",
+   fotos:["https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg"],
+   desc:"Collar azul, muy amigable con niños. Desapareció cerca del Parque Las Heras.",
+   raza:"Golden Retriever",fecha:"01/04/2026",ts:20260401,resuelta:false},
+  {id:2,nombre:"Negrín",edad:5,tipo:"Perro",estado:"Encontrada",localidad:"Córdoba",contacto:"11-2222-2222",
+   fotos:["https://images.dog.ceo/breeds/labrador/n02099712_4323.jpg"],
+   desc:"Labrador negro, encontrado en el parque Sarmiento. Sin collar, muy dócil.",
+   raza:"Labrador negro",fecha:"31/03/2026",ts:20260331,resuelta:false},
+  {id:3,nombre:"Misu",edad:3,tipo:"Gato",estado:"Perdida",localidad:"Rosario",contacto:"11-3333-3333",
+   fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg"],
+   desc:"Gata persa blanca con manchas grises, muy tímida. Lleva collar rosa.",
+   raza:"Persa blanca",fecha:"02/04/2026",ts:20260402,resuelta:false},
+  {id:4,nombre:"Nieve",edad:1,tipo:"Perro",estado:"Perdida",localidad:"Rafael Calzada",contacto:"11-4444-4444",
+   fotos:["https://images.dog.ceo/breeds/husky/n02110185_10047.jpg"],
+   desc:"Husky siberiano, pelaje blanco y gris, ojos celestes. Muy dócil.",
+   raza:"Husky siberiano",fecha:"03/04/2026",ts:20260403,resuelta:false},
+  {id:5,nombre:"Canela",edad:1,tipo:"Gato",estado:"Perdida",localidad:"Caballito",contacto:"11-5555-5555",
+   fotos:["https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/800px-Kittyply_edit1.jpg"],
+   desc:"Gatita atigrada marrón y naranja, muy juguetona. Se extravió en Caballito.",
+   raza:"Atigrada marrón",fecha:"03/04/2026",ts:20260403,resuelta:false}
+]);
+function guardarMascotas(){ return lsSet(LS_MASCOTAS, mascotas); }
+
+let nextId=lsGet(LS_NEXTID,6);let listaActual=[...mascotas],modalIdx=-1,selStars=0,b64s=[];
+let chips={b:{ok:false,val:""},p:{ok:false,val:""}};
+
+const GAL_IMGS=[
+  "https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg",
+  "https://images.dog.ceo/breeds/husky/n02110185_10047.jpg",
+  "https://images.dog.ceo/breeds/labrador/n02099712_4323.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Kittyply_edit1.jpg/800px-Kittyply_edit1.jpg",
+  "https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg",
+  "https://images.dog.ceo/breeds/shiba/shiba-8.jpg",
+  "https://images.dog.ceo/breeds/poodle-standard/n02113799_2280.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Cat_poster_1.jpg/800px-Cat_poster_1.jpg",
+  "https://images.dog.ceo/breeds/maltese/n02085936_4245.jpg",
+];
+
+
+// NAV SCROLL
+window.addEventListener("scroll",()=>document.getElementById("mainNav").classList.toggle("scrolled",window.scrollY>40));
+
+// NAV HAMBURGER
+function toggleNav(){const h=document.getElementById("hamburger"),m=document.getElementById("nav-mobile");h.classList.toggle("open");m.classList.toggle("open");}
+function closeMobileNav(){document.getElementById("hamburger").classList.remove("open");document.getElementById("nav-mobile").classList.remove("open");}
+
+// TICKER
+(function(){
+  const items=["🔍 Rocky perdido en Palermo — Golden Retriever","✅ Milu encontrada en Villa Urquiza — reunida con su familia","🐱 Misu perdida en Rosario — Gata persa blanca","🔍 Nieve perdida en Rafael Calzada — Husky siberiano","❤️ 47 mascotas reunidas gracias a la comunidad","🔔 Nueva mascota reportada en Córdoba Capital","🐶 Negrín encontrado en el parque Sarmiento — Córdoba","📢 Publicá tu aviso gratis — sin registro requerido"];
+  const t=document.getElementById("ticker");
+  [...items,...items].forEach(txt=>{const d=document.createElement("div");d.className="ticker-item";d.innerHTML=`<div class="ticker-dot"></div>${txt}`;t.appendChild(d);});
+})();
+
+// AUTOCOMPLETE
+function setupAC(inputId,listId,chipKey){
+  const inp=document.getElementById(inputId),list=document.getElementById(listId);
+  inp.addEventListener("input",()=>{
+    const v=inp.value.trim().toLowerCase();chips[chipKey].ok=false;list.innerHTML="";
+    if(v.length<2){list.style.display="none";return;}
+    const m=LOCS.filter(l=>l.toLowerCase().includes(v)).slice(0,8);
+    if(!m.length){list.style.display="none";return;}
+    m.forEach(loc=>{const d=document.createElement("div");d.textContent=loc;d.onclick=()=>{selChip(chipKey,loc);inp.value="";list.style.display="none";};list.appendChild(d);});
+    list.style.display="block";
+  });
+  document.addEventListener("click",e=>{if(!inp.contains(e.target))list.style.display="none";});
+}
+function selChip(k,val){chips[k]={ok:true,val};document.getElementById(k+"-chip-txt").textContent="📍 "+val;document.getElementById(k+"-chip").style.display="flex";}
+function clearChip(k){chips[k]={ok:false,val:""};document.getElementById(k+"-chip").style.display="none";const map={b:"b-loc",p:"p-loc"};if(map[k])document.getElementById(map[k]).value="";}
+setupAC("b-loc","b-ac","b");setupAC("p-loc","p-ac","p");
+
+// TABS
+function switchTab(t){
+  ["buscar","publicar","mapa"].forEach(x=>{document.getElementById("panel-"+x).classList.remove("active");document.getElementById("tb-"+x).classList.remove("active");});
+  document.getElementById("panel-"+t).classList.add("active");document.getElementById("tb-"+t).classList.add("active");
+  if(t==="mapa")setTimeout(initMap,100);
+}
+function goToApp(t){document.getElementById("app").scrollIntoView({behavior:"smooth"});setTimeout(()=>switchTab(t),350);}
+
+// FOTOS UPLOAD — comprime imagen antes de guardar
+function comprimirImagen(file, cb){
+  var r=new FileReader();
+  r.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var MAX=600;
+      var w=img.width, h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      var canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL('image/jpeg',0.6));
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+document.getElementById("p-fotos").addEventListener("change",function(){
+  var files=Array.from(this.files).slice(0,2-b64s.length);
+  files.forEach(function(f){
+    if(b64s.length>=2)return;
+    comprimirImagen(f,function(b64){
+      b64s.push(b64);
+      renderThumbs();
+    });
+  });
+  this.value="";
+});
+function renderThumbs(){const c=document.getElementById("thumbs");c.innerHTML="";b64s.forEach((b,i)=>{c.innerHTML+=`<div class="thumb"><img src="${b}"><button class="thumb-del" onclick="delThumb(${i})">✕</button></div>`;});}
+function delThumb(i){b64s.splice(i,1);renderThumbs();}
+
+
+
+// PUBLICAR
+function publicar(){
+  const n=document.getElementById("p-nombre").value.trim(),t=document.getElementById("p-tipo").value,s=document.getElementById("p-estado").value,c=document.getElementById("p-contacto").value.trim();
+  if(!n||!t||!s||!chips.p.ok||!c){toast("⚠️ Completá los campos obligatorios (*)");if(!chips.p.ok)toast("📍 Seleccioná la localidad de la lista");return;}
+  const now=new Date(),fecha=`${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`;
+  const fotos=b64s.length?[...b64s]:["https://images.dog.ceo/breeds/retriever-golden/n02099601_3004.jpg"];
+  const ts=Number(`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`);
+  var sess=getSesion();
+  mascotas.unshift({id:nextId++,nombre:n,tipo:t,estado:s,edad:document.getElementById("p-edad").value?Number(document.getElementById("p-edad").value):null,localidad:chips.p.val,contacto:c,fotos,desc:document.getElementById("p-desc").value.trim(),raza:document.getElementById("p-raza").value.trim(),fecha,ts,resuelta:false,publicadoPor:sess?sess.email:""});
+  
+  ["p-nombre","p-edad","p-contacto","p-raza","p-desc","p-loc"].forEach(id=>document.getElementById(id).value="");
+  ["p-tipo","p-estado"].forEach(id=>document.getElementById(id).selectedIndex=0);
+  clearChip("p");b64s=[];renderThumbs();
+  var ok=guardarMascotas();
+  lsSet(LS_NEXTID,nextId);
+  listaActual=[...mascotas];
+  actualizarStats();
+  renderCards(mascotas);
+  toast("✅ ¡Mascota publicada y guardada!");
+  switchTab("buscar");
+  goToApp("buscar");
+}
+
+// BUSCAR
+function buscar(){
+  if(!chips.b.ok){toast("📍 Seleccioná una localidad de la lista");document.getElementById("b-loc").focus();return;}
+  const lo=chips.b.val,es=document.getElementById("f-estado").value,ti=document.getElementById("f-tipo").value;
+  listaActual=mascotas.filter(m=>m.localidad.toLowerCase().includes(lo.toLowerCase())&&(es==="Todos"||m.estado===es)&&(ti==="Todos"||m.tipo===ti));
+  aplicarOrden();
+}
+
+function aplicarOrden(){
+  const ord=document.getElementById("sort-sel").value;
+  let l=[...listaActual];
+  if(ord==="reciente")l.sort((a,b)=>b.ts-a.ts);
+  else if(ord==="antiguo")l.sort((a,b)=>a.ts-b.ts);
+  else if(ord==="nombre")l.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  else if(ord==="resuelta")l=l.filter(m=>!m.resuelta);
+  renderCards(l);
+}
+
+function renderCards(lista){
+  const g=document.getElementById("resultados");g.innerHTML="";
+  if(!lista.length){g.innerHTML='<div class="no-res"><span class="no-res-emoji">🔍</span><p><strong>No encontramos mascotas</strong></p><p style="font-size:.85rem;margin-top:7px;color:#bbb">Podés publicar un aviso para que la comunidad te ayude.</p></div>';return;}
+  lista.forEach(m=>{
+    const idx=mascotas.indexOf(m),d=document.createElement("div");d.className="pet-card"+(m.resuelta?" resuelta":"");
+    d.innerHTML=`<div class="pet-card-img-wrap"><img src="${m.fotos[0]}" alt="${m.nombre}" onerror="this.src='https://placedog.net/300/200'"><div class="pet-card-overlay"></div><div class="pet-card-badges">${m.resuelta?'<span class="badge badge-resuelta">✅ Resuelta</span>':`<span class="badge badge-${m.estado.toLowerCase()}">${m.estado}</span>`}<span class="badge badge-tipo">${m.tipo}</span></div></div><div class="pet-card-body"><div class="pet-card-name">${m.nombre}</div><div class="pet-card-info">📍 ${m.localidad}</div>${m.edad?`<div class="pet-card-info">🎂 ${m.edad} año${m.edad>1?"s":""}</div>`:""}<div class="pet-card-info">🐾 ${m.raza||m.tipo}</div><div class="pet-card-date">Publicado ${m.fecha}</div></div><div class="pet-card-actions"><button class="btn-ver" onclick="openModal(${idx})">Ver más</button><button class="btn-wpp" title="WhatsApp" onclick="irWpp('${m.contacto}','${m.nombre}','${m.localidad}')">💬</button><button class="btn-share" title="Compartir" onclick="openShare(${idx})">🔁</button>${!m.resuelta?`<button class="btn-resuelto" onclick="marcarResuelta(${idx})">✅</button>`:""}</div>`;
+    g.appendChild(d);
+  });
+}
+
+function marcarResuelta(idx){if(confirm(`¿Confirmas que "${mascotas[idx].nombre}" ya fue encontrada?`)){mascotas[idx].resuelta=true;guardarMascotas();actualizarStats();aplicarOrden();toast(`✅ "${mascotas[idx].nombre}" marcada como resuelta. ¡Alegría!`);}}
+
+function openModal(idx){
+  document.body.style.overflow='hidden';
+  modalIdx=idx;const m=mascotas[idx];
+  document.getElementById("m-imgs").innerHTML=m.fotos.map(f=>`<img class="modal-img" src="${f}" onerror="this.src='https://placedog.net/300/200'">`).join("");
+  document.getElementById("m-badges").innerHTML=`<span class="badge badge-${m.resuelta?"resuelta":m.estado.toLowerCase()}">${m.resuelta?"✅ Resuelta":m.estado}</span><span class="badge badge-tipo">${m.tipo}</span>`;
+  document.getElementById("m-name").textContent=m.nombre;
+  document.getElementById("m-rows").innerHTML=[[m.localidad,"📍","Localidad"],[m.edad?m.edad+" año"+(m.edad>1?"s":""):null,"🎂","Edad"],[m.raza,"🐾","Raza / Color"],[m.desc,"💬","Descripción"],[m.contacto,"📞","Contacto"],[m.fecha,"📅","Publicado"]].filter(r=>r[0]).map(r=>`<div class="modal-row"><span class="m-icon">${r[1]}</span><span><strong>${r[2]}:</strong> ${r[0]}</span></div>`).join("");
+  document.getElementById("m-wpp").onclick=()=>irWpp(m.contacto,m.nombre,m.localidad);
+  
+  document.getElementById("m-share").onclick=()=>{closeModal();openShare(idx);};
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal(){document.getElementById("modal").classList.remove("open");document.body.style.overflow="";}
+document.getElementById("modal").addEventListener("click",e=>{if(e.target===document.getElementById("modal"))closeModal();});
+
+function irWpp(contacto,nombre,localidad){const tel=contacto.replace(/\D/g,""),msg=encodeURIComponent(`Hola! Vi la publicación de "${nombre}" en R.A.D.A.R. (${localidad}). ¿Me podés dar más información?`);if(tel.length>=8)window.open(`https://wa.me/54${tel}?text=${msg}`,"_blank");else toast("📞 Contacto: "+contacto);}
+
+function openShare(idx){
+  document.body.style.overflow='hidden';modalIdx=idx;const m=mascotas[idx],link=`https://mascotasconectadas.ar/aviso/${m.id}`;document.getElementById("share-link-txt").textContent=link;document.getElementById("shareOverlay").classList.add("open");}
+function closeShare(){document.getElementById("shareOverlay").classList.remove("open");document.body.style.overflow="";}
+function shareWpp(){const m=mascotas[modalIdx],msg=encodeURIComponent(`🐾 *${m.nombre}* — ${m.estado}\n📍 ${m.localidad}\nhttps://mascotasconectadas.ar/aviso/${m.id}`);window.open(`https://wa.me/?text=${msg}`,"_blank");}
+function shareFb(){window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://mascotasconectadas.ar/aviso/"+mascotas[modalIdx].id)}`,"_blank");}
+function shareIg(){toast("📸 Copiá el link y pegalo en tu historia de Instagram");}
+function copiarLink(){const link=document.getElementById("share-link-txt").textContent;navigator.clipboard?.writeText(link).then(()=>toast("🔗 ¡Link copiado!"));}
+
+
+
+let mapInstance=null,mapPins=[];
+const COLORES={Perdida:"#C0392B",Encontrada:"#27AE60"};
+function initMap(){if(mapInstance)return;mapInstance=L.map("map").setView([-34.6037,-58.3816],5);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(mapInstance);renderMapPins();}
+function renderMapPins(filtro="Todas"){mapPins.forEach(p=>mapInstance.removeLayer(p));mapPins=[];mascotas.filter(m=>{if(filtro==="Todas")return true;return m.estado===filtro;}).forEach(m=>{const coords=COORDS[m.localidad]||[-34.6037,-58.3816];const jit=[coords[0]+(Math.random()-.5)*.04,coords[1]+(Math.random()-.5)*.04];const col=COLORES[m.estado]||"#666";const ico=L.divIcon({className:"",html:`<div style="width:16px;height:16px;background:${col};border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});const popup=`<div class="popup-body"><img class="popup-img" src="${m.fotos[0]}" onerror="this.src='https://placedog.net/210/120'"><div class="popup-name">${m.nombre}</div><div class="popup-info">📍 ${m.localidad} · ${m.estado}</div>${m.raza?`<div class="popup-info">🐾 ${m.raza}</div>`:""}<button class="popup-btn" onclick="openModal(${mascotas.indexOf(m)});document.querySelector('.leaflet-popup-close-button').click()">Ver más</button></div>`;const pin=L.marker(jit,{icon:ico}).addTo(mapInstance).bindPopup(popup,{className:"custom-popup",maxWidth:220});mapPins.push(pin);});}
+function filtrarMapa(btn){document.querySelectorAll(".map-filter-btn").forEach(b=>b.classList.remove("on"));btn.classList.add("on");renderMapPins(btn.dataset.f);}
+
+let resenas=lsGet(LS_RESENAS,[
+  {nombre:"Laura M.",ciudad:"Buenos Aires",texto:"¡Encontré a mi gatita en menos de un día! Gracias a toda la comunidad 😭🐱",estrellas:5,avatar:"https://i.pravatar.cc/80?img=1"},
+  {nombre:"Carlos P.",ciudad:"Córdoba",texto:"Publiqué el aviso y en 3 días alguien reconoció a mi perrito. ¡Qué alivio!",estrellas:5,avatar:"https://i.pravatar.cc/80?img=3"},
+  {nombre:"Mariana F.",ciudad:"Rosario",texto:"El filtro por localidad es clave. Encontré al perro de mi vecino en minutos.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=5"},
+  {nombre:"Diego R.",ciudad:"Mendoza",texto:"Muy buena plataforma. La encontré en días gracias a los filtros por localidad.",estrellas:4,avatar:"https://i.pravatar.cc/80?img=7"},
+  {nombre:"Sofía L.",ciudad:"Mar del Plata",texto:"Todo fue muy transparente y rápido. La recomiendo.",estrellas:5,avatar:"https://i.pravatar.cc/80?img=9"},
+  {nombre:"Tomás G.",ciudad:"Tucumán",texto:"Publiqué y a las horas me llamaron. ¡Excelente plataforma!",estrellas:5,avatar:"https://i.pravatar.cc/80?img=11"}
+]);
+function renderResenas(){document.getElementById("reviews-grid").innerHTML=resenas.map(r=>`<div class="review-card"><div class="review-stars">${"⭐".repeat(r.estrellas)}</div><div class="review-text">"${r.texto}"</div><div class="review-author"><div class="review-avatar"><img src="${r.avatar}" alt="${r.nombre}"></div><div><div class="review-name">${r.nombre}</div><div class="review-city">📍 ${r.ciudad}</div></div></div></div>`).join("");}
+document.querySelectorAll("#stars-picker span").forEach(s=>{s.addEventListener("mouseover",()=>updateStars(+s.dataset.v));s.addEventListener("click",()=>{selStars=+s.dataset.v;updateStars(selStars);});s.addEventListener("mouseout",()=>updateStars(selStars));});
+function updateStars(n){document.querySelectorAll("#stars-picker span").forEach((s,i)=>{s.textContent=i<n?"⭐":"☆";});}
+function agregarResena(){const n=document.getElementById("rev-nombre").value.trim(),c=document.getElementById("rev-ciudad").value.trim(),t=document.getElementById("rev-texto").value.trim();if(!n||!c||!t){toast("⚠️ Completá todos los campos");return;}if(!selStars){toast("⭐ Elegí una puntuación");return;}resenas.unshift({nombre:n,ciudad:c,texto:t,estrellas:selStars,avatar:`https://i.pravatar.cc/80?img=${Math.floor(Math.random()*70)+1}`});lsSet(LS_RESENAS,resenas);renderResenas();["rev-nombre","rev-ciudad","rev-texto"].forEach(id=>document.getElementById(id).value="");selStars=0;updateStars(0);toast("✅ ¡Gracias por tu reseña!");}
+
+function actualizarStats(){document.getElementById("s-total").textContent=mascotas.length;}
+
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200);}
+
+
+// ===== PÁGINAS =====
+function showPage(page){
+  document.getElementById("page-main").style.display    = page==="main"    ? "block" : "none";
+  document.getElementById("page-info").style.display    = page==="info"    ? "block" : "none";
+  document.getElementById("nav-main").style.color    = page==="main"    ? "#fff" : "";
+  document.getElementById("nav-info").style.color    = page==="info"    ? "#fff" : "";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+// Cargar estado inicial
+listaActual=[...mascotas];
+actualizarStats();
+renderCards(mascotas);
+renderResenas();
+
+// ===== LOGIN =====
+var LS_SESSION = "mc_session";
+var LS_USERS   = "mc_users";
+var ADMIN_PASS = "admin2026";
+
+// Helpers de storage
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem(LS_USERS)||"{}"); }
+  catch(e){ return {}; }
+}
+function saveUsers(u){ localStorage.setItem(LS_USERS, JSON.stringify(u)); }
+function getSession(){
+  try{ return JSON.parse(localStorage.getItem(LS_SESSION)); }
+  catch(e){ return null; }
+}
+function saveSession(obj){ localStorage.setItem(LS_SESSION, JSON.stringify(obj)); }
+function clearSession(){ localStorage.removeItem(LS_SESSION); }
+
+function emailOk(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+// Mostrar/ocultar contraseña
+function togglePwd(id, btn){
+  var inp = document.getElementById(id);
+  if(!inp) return;
+  inp.type = (inp.type === "password") ? "text" : "password";
+  btn.textContent = (inp.type === "password") ? "👁️" : "🙈";
+}
+
+// Fuerza de contraseña
+function checkStrength(pwd){
+  var bar = document.getElementById("pwd-strength");
+  if(!bar) return;
+  bar.className = "login-strength";
+  if(!pwd) return;
+  if(pwd.length < 6)  bar.classList.add("str-weak");
+  else if(pwd.length < 10 || !/[0-9]/.test(pwd)) bar.classList.add("str-mid");
+  else bar.classList.add("str-strong");
+}
+
+// Cambiar pestaña login/registro
+function switchLoginTab(tab){
+  var isLogin = (tab === "login");
+  var tabs = document.querySelectorAll(".login-tab");
+  tabs[0].classList.toggle("active",  isLogin);
+  tabs[1].classList.toggle("active", !isLogin);
+  document.getElementById("lf-login").classList.toggle("active",  isLogin);
+  document.getElementById("lf-register").classList.toggle("active", !isLogin);
+  if(isLogin) document.getElementById("li-email").focus();
+  else        document.getElementById("rg-name").focus();
+}
+
+// Entrar a la página (ocultar pantalla de login)
+function entrar(){
+  document.getElementById("login-screen").style.display = "none";
+  document.body.style.overflow = "";
+}
+
+// Actualizar nombre en nav
+function mostrarNombreNav(nombre){
+  var el = document.getElementById("nav-user-name");
+  if(el) el.textContent = "👋 " + nombre;
+}
+
+// ── ADMIN ──
+function cerrarPanelAdmin(){
+  var p = document.getElementById("adm-panel");
+  if(p) p.remove();
+  actualizarNavUsuario();
+}
+function abrirPanelAdmin(){
+  document.getElementById("user-login-panel").style.display = "none";
+  document.getElementById("admin-login-panel").style.display = "block";
+  setTimeout(function(){ document.getElementById("adm-pwd").focus(); }, 50);
+}
+function volverLogin(){
+  document.getElementById("admin-login-panel").style.display = "none";
+  document.getElementById("user-login-panel").style.display  = "block";
+  document.getElementById("adm-pwd").value = "";
+  document.getElementById("adm-err").textContent = "";
+}
+
+function doLoginAdmin(){
+  var pwd = document.getElementById("adm-pwd").value.trim();
+  var err = document.getElementById("adm-err");
+  err.textContent = "";
+  if(!pwd){ err.textContent = "Ingresá la contraseña."; return; }
+  if(pwd !== ADMIN_PASS){
+    err.textContent = "Contraseña incorrecta.";
+    document.getElementById("adm-pwd").value = "";
+    document.getElementById("adm-pwd").focus();
+    return;
+  }
+  saveSession({name:"Administrador", isAdmin:true});
+  entrar();
+  mostrarNombreNav("Administrador");
+  setTimeout(mostrarAdmin, 100);
+}
+
+// ── REGISTRO ──
+function doRegister(){
+  var name  = document.getElementById("rg-name").value.trim();
+  var email = document.getElementById("rg-email").value.trim().toLowerCase();
+  var pwd   = document.getElementById("rg-pwd").value;
+  var pwd2  = document.getElementById("rg-pwd2").value;
+  var err   = document.getElementById("rg-err");
+  var ok    = document.getElementById("rg-ok");
+  err.textContent = ""; ok.textContent = "";
+
+  if(!name)              { err.textContent = "Ingresá tu nombre."; return; }
+  if(!emailOk(email))   { err.textContent = "Email inválido."; return; }
+  if(pwd.length < 6)    { err.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+  if(pwd !== pwd2)       { err.textContent = "Las contraseñas no coinciden."; return; }
+
+  var users = getUsers();
+  if(users[email])       { err.textContent = "Ya existe una cuenta con ese email."; return; }
+
+  var code = String(Math.floor(100000 + Math.random()*900000));
+  users[email] = {
+    name: name,
+    pwd: btoa(pwd),
+    verified: false,
+    code: code,
+    created: new Date().toLocaleDateString("es-AR")
+  };
+  saveUsers(users);
+
+  // Mostrar código en pantalla
+  var msg = document.getElementById("rg-verify-msg");
+  msg.style.display = "block";
+  msg.innerHTML = "\u2705 Cuenta creada! Tu codigo es:<br>"
+    + "<strong style='font-size:1.6rem;letter-spacing:6px;color:#4A7C59;display:block;margin:10px 0;'>" + code + "</strong>"
+    + "<small style='color:#888;'>Copia este codigo para verificar tu cuenta.</small>";
+
+  // Cambiar botón a verificar
+  var btn = document.getElementById("btn-register");
+  btn.textContent = "Verificar código";
+  btn.onclick = function(){ verificarCodigo(email); };
+}
+
+function verificarCodigo(email){
+  var code = prompt("Ingresá el código de 6 dígitos:");
+  if(!code) return;
+  var users = getUsers();
+  if(!users[email]) return;
+  if(users[email].code === code.trim()){
+    users[email].verified = true;
+    delete users[email].code;
+    saveUsers(users);
+    document.getElementById("rg-ok").textContent = "✅ ¡Verificado! Ya podés iniciar sesión.";
+    document.getElementById("rg-verify-msg").style.display = "none";
+    var btn = document.getElementById("btn-register");
+    btn.textContent = "Crear cuenta";
+    btn.onclick = doRegister;
+    setTimeout(function(){
+      switchLoginTab("login");
+      document.getElementById("li-email").value = email;
+      document.getElementById("li-pwd").focus();
+    }, 1500);
+  } else {
+    document.getElementById("rg-err").textContent = "Código incorrecto. Intentá de nuevo.";
+  }
+}
+
+// ── LOGIN USUARIO ──
+function doLogin(){
+  var email = document.getElementById("li-email").value.trim().toLowerCase();
+  var pwd   = document.getElementById("li-pwd").value;
+  var err   = document.getElementById("li-err");
+  err.textContent = "";
+
+  if(!email || !pwd){ err.textContent = "Ingresá email y contraseña."; return; }
+
+  var users = getUsers();
+  if(!users[email])              { err.textContent = "No existe esa cuenta."; return; }
+  if(atob(users[email].pwd) !== pwd){ err.textContent = "Contraseña incorrecta."; document.getElementById("li-pwd").value = ""; return; }
+  if(!users[email].verified)    { err.textContent = "Verificá tu cuenta con el código que te apareció al registrarte."; return; }
+
+  saveSession({name: users[email].name, email: email, isAdmin: false});
+  entrar();
+  mostrarNombreNav(users[email].name);
+  toast("✅ Bienvenida/o, " + users[email].name + "!");
+}
+
+function cerrarSesion(){
+  clearSession();
+  location.reload();
+}
+
+function actualizarNavUsuario(){
+  var s = getSession();
+  if(s) mostrarNombreNav(s.name);
+}
+
+function mostrarAdmin(){
+  if(document.getElementById('adm-panel')) document.getElementById('adm-panel').remove();
+
+  var users    = getUsers();
+  var uList    = Object.keys(users);
+  var total    = mascotas.length;
+  var perdidas = mascotas.filter(function(m){return m.estado==="Perdida"&&!m.resuelta;}).length;
+  var resueltas= mascotas.filter(function(m){return m.resuelta;}).length;
+  var encontradas = mascotas.filter(function(m){return m.estado==="Encontrada"&&!m.resuelta;}).length;
+
+  // ── Estilos inline para el panel ──
+  var s = {
+    panel:  'position:fixed;inset:0;background:#0D1810;z-index:88888;overflow-y:auto;font-family:Nunito,sans-serif;',
+    wrap:   'max-width:1100px;margin:0 auto;padding:28px 20px 60px;',
+    header: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;flex-wrap:wrap;gap:14px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:22px;',
+    title:  'font-family:Playfair Display,serif;color:#fff;font-size:2rem;margin:0;',
+    sub:    'color:rgba(255,255,255,.4);font-size:.82rem;margin-top:3px;',
+    btnExit:'padding:10px 22px;background:#4A7C59;color:#fff;border:none;border-radius:9px;font-family:Nunito,sans-serif;font-weight:800;font-size:.9rem;cursor:pointer;',
+    section:'margin-bottom:36px;',
+    secTitle:'font-family:Playfair Display,serif;color:#fff;font-size:1.2rem;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.08);',
+    card:   'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:22px;text-align:center;',
+    grid4:  'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px;',
+    grid2:  'display:grid;grid-template-columns:1fr 1fr;gap:16px;',
+    table:  'width:100%;border-collapse:collapse;font-size:.86rem;',
+    th:     'padding:11px 14px;text-align:left;color:rgba(255,255,255,.45);font-weight:800;font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid rgba(255,255,255,.08);',
+    td:     'padding:11px 14px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle;',
+    badge:  function(txt,col){return '<span style="padding:3px 10px;border-radius:4px;font-size:.72rem;font-weight:800;background:'+col+'20;color:'+col+';">'+txt+'</span>';},
+    btnDel: 'padding:5px 12px;background:rgba(192,57,43,.25);color:#ff7a6e;border:none;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:800;font-family:Nunito,sans-serif;',
+    btnOk:  'padding:5px 12px;background:rgba(39,174,96,.25);color:#5edf9a;border:none;border-radius:6px;cursor:pointer;font-size:.75rem;font-weight:800;font-family:Nunito,sans-serif;margin-right:4px;',
+    nodata: '<div style="text-align:center;padding:32px;color:rgba(255,255,255,.2);font-size:.9rem;">Sin datos aún</div>',
+  };
+
+  var h = '<div id="adm-panel" style="'+s.panel+'">';
+  h += '<div style="'+s.wrap+'">';
+
+  // ── HEADER ──
+  h += '<div style="'+s.header+'">';
+  h += '<div>';
+  h += '<h1 style="'+s.title+'">🛡️ Panel de Administración</h1>';
+  h += '<p style="'+s.sub+'">R.A.D.A.R. · Todo lo que hacen los usuarios en tiempo real</p>';
+  h += '</div>';
+  h += '<button style="'+s.btnExit+'" onclick="cerrarPanelAdmin()">← Ver página</button>';
+  h += '</div>';
+
+  // ── ESTADÍSTICAS ──
+  var stats = [
+    {ico:'🐾', num:total,       lbl:'Publicaciones totales', col:'#4A7C59'},
+    {ico:'🔍', num:perdidas,    lbl:'Mascotas perdidas',      col:'#C0392B'},
+    {ico:'✅', num:resueltas,   lbl:'Casos resueltos',        col:'#27AE60'},
+    {ico:'📍', num:encontradas, lbl:'Encontradas',            col:'#2980B9'},
+    {ico:'👥', num:uList.length,lbl:'Usuarios registrados',   col:'#C8823A'},
+    {ico:'✔️', num:uList.filter(function(e){return users[e].verified;}).length, lbl:'Usuarios verificados', col:'#8E44AD'},
+    {ico:'⏳', num:uList.filter(function(e){return !users[e].verified;}).length, lbl:'Pendientes verificación', col:'#F39C12'},
+    {ico:'⭐', num:resenas.length, lbl:'Reseñas publicadas', col:'#E67E22'},
+  ];
+
+  h += '<div style="'+s.grid4+'">';
+  stats.forEach(function(st){
+    h += '<div style="'+s.card+'">';
+    h += '<div style="font-size:1.8rem;margin-bottom:6px;">'+st.ico+'</div>';
+    h += '<div style="font-size:2rem;font-weight:800;color:'+st.col+';font-family:Playfair Display,serif;">'+st.num+'</div>';
+    h += '<div style="font-size:.74rem;color:rgba(255,255,255,.4);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-top:4px;">'+st.lbl+'</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // ── SECCIÓN USUARIOS ──
+  h += '<div style="'+s.section+'">';
+  h += '<h2 style="'+s.secTitle+'">👥 Usuarios registrados</h2>';
+  h += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:auto;">';
+  if(!uList.length){
+    h += s.nodata;
+  } else {
+    h += '<table style="'+s.table+'">';
+    h += '<thead><tr>';
+    ['Nombre','Email','Estado','Registro','Tipo','Publicaciones','Reseñas','Acciones'].forEach(function(col){
+      h += '<th style="'+s.th+'">'+col+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+    uList.forEach(function(email, i){
+      var u = users[email];
+      var bg = i%2===0 ? 'rgba(255,255,255,.015)' : 'transparent';
+      var pubCount = mascotas.filter(function(m){return m.publicadoPor===email;}).length;
+      var revCount = resenas.filter(function(r){return r.email===email;}).length;
+      h += '<tr style="background:'+bg+'">';
+      h += '<td style="'+s.td+';font-weight:800;">'+u.name+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.5);font-size:.82rem;">'+email+'</td>';
+      h += '<td style="'+s.td+'">'+s.badge(u.verified?'✓ Verificado':'⏳ Pendiente', u.verified?'#27AE60':'#F39C12')+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.35);font-size:.78rem;">'+(u.created||'-')+'</td>';
+      h += '<td style="'+s.td+'">'+s.badge(u.google?'Google':'Email','#4A7C59')+'</td>';
+      h += '<td style="'+s.td+';text-align:center;font-weight:800;color:#4A7C59;">'+pubCount+'</td>';
+      h += '<td style="'+s.td+';text-align:center;font-weight:800;color:#C8823A;">'+revCount+'</td>';
+      h += '<td style="'+s.td+'">';
+      if(!u.verified){
+        h += '<button style="'+s.btnOk+'" data-em="'+email+'" onclick="verificarUsuarioAdmin(this.dataset.em)">Verificar</button>';
+      }
+      h += '<button style="'+s.btnDel+'" data-em="'+email+'" onclick="eliminarUsuarioAdmin(this.dataset.em)">Eliminar</button>';
+      h += '</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div></div>';
+
+  // ── SECCIÓN PUBLICACIONES ──
+  h += '<div style="'+s.section+'">';
+  h += '<h2 style="'+s.secTitle+'">🐾 Publicaciones de usuarios</h2>';
+  h += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:auto;">';
+  if(!mascotas.length){
+    h += s.nodata;
+  } else {
+    h += '<table style="'+s.table+'">';
+    h += '<thead><tr>';
+    ['Foto','Nombre','Tipo','Estado','Localidad','Publicado por','Fecha','Acciones'].forEach(function(col){
+      h += '<th style="'+s.th+'">'+col+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+    mascotas.forEach(function(m, i){
+      var bg = i%2===0 ? 'rgba(255,255,255,.015)' : 'transparent';
+      var estadoCol = m.resuelta ? '#27AE60' : m.estado==='Perdida' ? '#C0392B' : '#2980B9';
+      var estadoTxt = m.resuelta ? '✅ Resuelta' : m.estado;
+      h += '<tr style="background:'+bg+'">';
+      h += '<td style="'+s.td+'"><img src="'+m.fotos[0]+'" style="width:38px;height:38px;border-radius:8px;object-fit:cover;" onerror="this.style.display=&apos;none&apos;"></td>';
+      h += '<td style="'+s.td+';font-weight:800;color:#fff;">'+m.nombre+'</td>';
+      h += '<td style="'+s.td+'">'+s.badge(m.tipo,'#4A7C59')+'</td>';
+      h += '<td style="'+s.td+'">'+s.badge(estadoTxt, estadoCol)+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.5);font-size:.82rem;">'+m.localidad+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.4);font-size:.78rem;">'+(m.publicadoPor||'Anónimo')+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.35);font-size:.78rem;">'+m.fecha+'</td>';
+      h += '<td style="'+s.td+'">';
+      if(!m.resuelta){
+        h += '<button style="'+s.btnOk+'" data-idx="'+i+'" onclick="resolverMascotaAdmin(+this.dataset.idx)">Resolver</button>';
+      }
+      h += '<button style="'+s.btnDel+'" data-idx="'+i+'" onclick="eliminarMascotaAdmin(+this.dataset.idx)">Eliminar</button>';
+      h += '</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div></div>';
+
+  // ── SECCIÓN RESEÑAS ──
+  h += '<div style="'+s.section+'">';
+  h += '<h2 style="'+s.secTitle+'">⭐ Reseñas de usuarios</h2>';
+  h += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:auto;">';
+  if(!resenas.length){
+    h += s.nodata;
+  } else {
+    h += '<table style="'+s.table+'">';
+    h += '<thead><tr>';
+    ['Usuario','Ciudad','Estrellas','Reseña','Acción'].forEach(function(col){
+      h += '<th style="'+s.th+'">'+col+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+    resenas.forEach(function(r, i){
+      var bg = i%2===0 ? 'rgba(255,255,255,.015)' : 'transparent';
+      var stars = '';
+      for(var x=0;x<5;x++) stars += x<r.estrellas ? '⭐' : '☆';
+      h += '<tr style="background:'+bg+'">';
+      h += '<td style="'+s.td+';font-weight:800;">';
+      h += '<div style="display:flex;align-items:center;gap:8px;">';
+      h += '<img src="'+r.avatar+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;" onerror="this.style.display=&apos;none&apos;">';
+      h += r.nombre+'</div></td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.5);">'+r.ciudad+'</td>';
+      h += '<td style="'+s.td+';font-size:.9rem;">'+stars+'</td>';
+      h += '<td style="'+s.td+';color:rgba(255,255,255,.65);font-size:.84rem;max-width:300px;"><em>"'+r.texto+'"</em></td>';
+      h += '<td style="'+s.td+'"><button style="'+s.btnDel+'" data-idx="'+i+'" onclick="eliminarResenaAdmin(+this.dataset.idx)">Eliminar</button></td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div></div>';
+
+  // ── SECCIÓN ACTIVIDAD RECIENTE ──
+  h += '<div style="'+s.section+'">';
+  h += '<h2 style="'+s.secTitle+'">📋 Actividad reciente</h2>';
+  h += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:8px 0;">';
+  var actividad = [];
+  mascotas.slice(0,10).forEach(function(m){
+    actividad.push({ico:'🐾', txt:'Nueva publicación: <strong>'+m.nombre+'</strong> ('+m.tipo+') en '+m.localidad, fecha:m.fecha, col:'#4A7C59', user:m.publicadoPor||'Anónimo'});
+  });
+  resenas.slice(0,5).forEach(function(r){
+    actividad.push({ico:'⭐', txt:'Nueva reseña de <strong>'+r.nombre+'</strong>: '+r.estrellas+' estrellas', fecha:'', col:'#C8823A', user:r.ciudad});
+  });
+  uList.slice(0,5).forEach(function(email){
+    actividad.push({ico:'👤', txt:'Nuevo usuario: <strong>'+users[email].name+'</strong>', fecha:users[email].created||'', col:'#2980B9', user:email});
+  });
+  if(!actividad.length){
+    h += s.nodata;
+  } else {
+    actividad.forEach(function(a){
+      h += '<div style="display:flex;align-items:flex-start;gap:14px;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.04);">';
+      h += '<span style="font-size:1.3rem;flex-shrink:0;margin-top:2px;">'+a.ico+'</span>';
+      h += '<div style="flex:1;">';
+      h += '<div style="color:rgba(255,255,255,.8);font-size:.88rem;line-height:1.5;">'+a.txt+'</div>';
+      h += '<div style="color:rgba(255,255,255,.3);font-size:.75rem;margin-top:3px;">'+a.user+(a.fecha?' · '+a.fecha:'')+'</div>';
+      h += '</div>';
+      h += '<div style="width:3px;background:'+a.col+';border-radius:2px;align-self:stretch;opacity:.6;flex-shrink:0;"></div>';
+      h += '</div>';
+    });
+  }
+  h += '</div></div>';
+
+  h += '</div></div>';
+
+  var div = document.createElement('div');
+  div.innerHTML = h;
+  document.body.appendChild(div.firstChild);
+}
+
+// ── ACCIONES ADMIN ──
+function verificarUsuarioAdmin(email){
+  var users=getUsers();
+  if(!users[email])return;
+  users[email].verified=true;
+  delete users[email].code;
+  saveUsers(users);
+  mostrarAdmin();
+  toast('✅ Usuario '+email+' verificado.');
+}
+
+function eliminarUsuarioAdmin(email){
+  if(!confirm("Eliminar usuario " + email + "?"))return;
+  var users=getUsers();
+  delete users[email];
+  saveUsers(users);
+  mostrarAdmin();
+  toast("Usuario eliminado.");
+}
+
+function eliminarMascotaAdmin(idx){
+  if(!confirm('¿Eliminar la publicación de "'+mascotas[idx].nombre+'"?'))return;
+  mascotas.splice(idx,1);
+  guardarMascotas();
+  renderCards(mascotas);
+  actualizarStats();
+  mostrarAdmin();
+  toast("Publicacion eliminada.");
+}
+
+function resolverMascotaAdmin(idx){
+  mascotas[idx].resuelta=true;
+  guardarMascotas();
+  renderCards(mascotas);
+  actualizarStats();
+  mostrarAdmin();
+  toast('✅ "'+mascotas[idx].nombre+'" marcada como resuelta.');
+}
+
+function eliminarResenaAdmin(idx){
+  if(!confirm("¿Eliminar esta reseña?"))return;
+  resenas.splice(idx,1);
+  lsSet(LS_RESENAS,resenas);
+  renderResenas();
+  mostrarAdmin();
+  toast("Resena eliminada.");
+}
+
+
+
+// ── FUNCIONES ADMIN ──
+function verificarUsuarioAdmin(email){
+  var users=getUsers(); if(!users[email])return;
+  users[email].verified=true; delete users[email].code;
+  saveUsers(users); mostrarAdmin(); toast("✅ Usuario verificado.");
+}
+function eliminarUsuarioAdmin(email){
+  if(!confirm("¿Eliminar usuario "+email+"?"))return;
+  var users=getUsers(); delete users[email];
+  saveUsers(users); mostrarAdmin(); toast("Usuario eliminado.");
+}
+function eliminarMascotaAdmin(idx){
+  if(!confirm("¿Eliminar esta publicación?"))return;
+  mascotas.splice(idx,1); guardarMascotas();
+  renderCards(mascotas); actualizarStats(); mostrarAdmin(); toast("Publicación eliminada.");
+}
+function resolverMascotaAdmin(idx){
+  mascotas[idx].resuelta=true; guardarMascotas();
+  renderCards(mascotas); actualizarStats(); mostrarAdmin(); toast("✅ Marcada como resuelta.");
+}
+function eliminarResenaAdmin(idx){
+  if(!confirm("¿Eliminar esta reseña?"))return;
+  resenas.splice(idx,1); lsSet(LS_RESENAS,resenas);
+  renderResenas(); mostrarAdmin(); toast("Reseña eliminada.");
+}
+
+// ── ARRANQUE ──
+(function init(){
+  var sess = getSession();
+  if(sess){
+    entrar();
+    mostrarNombreNav(sess.name);
+    if(sess.isAdmin) setTimeout(mostrarAdmin, 200);
+  } else {
+    document.getElementById("login-screen").style.display = "flex";
+    document.body.style.overflow = "hidden";
+    setTimeout(function(){ document.getElementById("li-email").focus(); }, 150);
+  }
+})();
+
+// ===== HUELLAS ESTÁTICAS DE FONDO =====
+(function(){
+  var DOG  = '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><ellipse cx="30" cy="38" rx="13" ry="15" fill="currentColor"/><ellipse cx="13" cy="23" rx="6.5" ry="8.5" fill="currentColor"/><ellipse cx="26" cy="17" rx="5.5" ry="7.5" fill="currentColor"/><ellipse cx="40" cy="17" rx="5.5" ry="7.5" fill="currentColor"/><ellipse cx="53" cy="23" rx="6.5" ry="8.5" fill="currentColor"/></svg>';
+  var CAT  = '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><ellipse cx="30" cy="39" rx="12" ry="14" fill="currentColor"/><ellipse cx="13" cy="24" rx="5.5" ry="7.5" fill="currentColor"/><ellipse cx="25" cy="18" rx="5" ry="7" fill="currentColor"/><ellipse cx="38" cy="18" rx="5" ry="7" fill="currentColor"/><ellipse cx="50" cy="24" rx="5.5" ry="7.5" fill="currentColor"/><polygon points="11,21 8,11 15,17" fill="currentColor"/><polygon points="49,21 52,11 46,17" fill="currentColor"/></svg>';
+  var BIRD = '<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"><ellipse cx="18" cy="43" rx="8" ry="6" fill="currentColor" transform="rotate(-28,18,43)"/><ellipse cx="33" cy="45" rx="8" ry="6" fill="currentColor" transform="rotate(8,33,45)"/><ellipse cx="48" cy="41" rx="8" ry="6" fill="currentColor" transform="rotate(28,48,41)"/><ellipse cx="26" cy="29" rx="7" ry="9" fill="currentColor"/><ellipse cx="42" cy="31" rx="7" ry="9" fill="currentColor"/></svg>';
+
+  // Paleta natural, opacidad visible pero suave (10-15%)
+  var PAWS = [
+    {svg:DOG,  color:'rgba(74,124,89,0.13)'},
+    {svg:DOG,  color:'rgba(74,124,89,0.10)'},
+    {svg:DOG,  color:'rgba(74,124,89,0.08)'},
+    {svg:CAT,  color:'rgba(200,130,58,0.12)'},
+    {svg:CAT,  color:'rgba(200,130,58,0.09)'},
+    {svg:CAT,  color:'rgba(200,130,58,0.07)'},
+    {svg:BIRD, color:'rgba(107,78,148,0.11)'},
+    {svg:BIRD, color:'rgba(107,78,148,0.08)'},
+    {svg:BIRD, color:'rgba(107,78,148,0.06)'},
+  ];
+
+  // 24 patitas distribuidas por toda la página
+  // [left%, top%, size(px), rot(deg)]
+  var POS = [
+    [ 3,  5, 42,  12], [90,  4, 38, -18],
+    [10, 14, 36,  45], [82, 12, 34,  25],
+    [ 2, 26, 44, -20], [92, 24, 40,  10],
+    [18, 35, 32,  60], [76, 33, 36, -35],
+    [ 5, 46, 38,  -8], [88, 44, 32,  50],
+    [22, 55, 34,  30], [72, 52, 38, -15],
+    [ 3, 65, 40,  55], [91, 63, 36,  -8],
+    [15, 73, 36, -40], [80, 72, 34,  22],
+    [ 6, 82, 32,  18], [88, 80, 40, -30],
+    [25, 90, 38,  -5], [68, 88, 34,  40],
+    [45, 96, 36,  15], [55,  2, 32, -12],
+    [38,  7, 40,  35], [62, 92, 38, -22],
+  ];
+
+  var canvas = document.getElementById('paws-canvas');
+  if(!canvas) return;
+
+  POS.forEach(function(pos, i){
+    var p  = PAWS[i % PAWS.length];
+    var el = document.createElement('div');
+    el.className = 'paw-float';
+    el.style.left      = pos[0] + '%';
+    el.style.top       = pos[1] + '%';
+    el.style.width     = pos[2] + 'px';
+    el.style.height    = pos[2] + 'px';
+    el.style.color     = p.color;
+    el.style.transform = 'rotate(' + pos[3] + 'deg)';
+    el.innerHTML = p.svg;
+    canvas.appendChild(el);
+  });
+})();
+
+</script>
+</body>
+</html>
